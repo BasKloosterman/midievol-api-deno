@@ -1,15 +1,7 @@
 // evo.ts
 
 import { Note } from "./src/notes/index.ts";
-import { score, ScoringsFunction } from "./src/scoring/index.ts";
-
-export interface Param {
-	name: string;
-	value: number;
-	range: [number, number];
-	type: "note" | "float";
-}
-
+import { Param, score, ScoringsFunction } from "./src/scoring/index.ts";
 export interface ScoringDefinition {
 	fn: ScoringsFunction;
 	weight: number;

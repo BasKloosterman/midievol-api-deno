@@ -16,7 +16,7 @@ export { scoreTonality } from "./tonality.ts";
 export { scoreNormalizeMelodic } from "./normalize.ts";
 import { Note } from "../notes/index.ts";
 
-export type ParamType = "note" | "float";
+export type ParamType = "note" | "float" | "int";
 export interface Param {
 	name: string;
 	value: number;
