@@ -1,4 +1,4 @@
-import { limitMelody } from "./util.ts";
+import { calcTotalLen, limitMelody } from "./util.ts";
 import { framesPerQNote, Note } from "../notes/index.ts";
 import { ScoringsFunction } from "./index.ts";
 
@@ -7,15 +7,26 @@ const normPitchMax = 480;
 const normLengthMin = framesPerQNote / 2;
 const normLengthMax = framesPerQNote;
 
-export function scoreNoteCount(
-	notes: Note[],
-	optimalCount = 15,
-	maxScore = 1,
-): number {
-	const noteCount = notes.length;
-	const deviation = Math.abs(noteCount - optimalCount);
-	const penalty = Math.exp(-deviation / 5);
-	return maxScore * penalty;
+// export function scoreNoteCount(
+// 	notes: Note[],
+// 	optimalCount = 15,
+// 	maxScore = 1,
+// ): number {
+// 	const noteCount = notes.length;
+// 	const deviation = Math.abs(noteCount - optimalCount);
+// 	const penalty = Math.exp(-deviation / 5);
+// 	return maxScore * penalty;
+// }
+
+export const scoreNoteCount: ScoringsFunction = ({ melody, voiceSplits, voices, params }) => {
+	melody = limitMelody(melody, voiceSplits, voices)
+	if (melody.length === 0) {
+		return null
+	}
+
+	const len = calcTotalLen(melody)
+
+	return -Math.abs((params[0].value * framesPerQNote) - len)
 }
 
 export const scoreNormalizeMelodic: ScoringsFunction = ({ melody, voiceSplits, voices }) => {

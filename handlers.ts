@@ -20,6 +20,7 @@ score,
 } from "./src/scoring/index.ts";
 import { Context } from "jsr:@oak/oak/context";
 import { limitMelody } from "./src/scoring/util.ts";
+import { scoreNoteCount } from "./src/scoring/normalize.ts";
 
 function normalizeMinInfToZero(scores: score[], debug = false): score[] {
 	const minScore = -1 * Math.min(...scores.filter(x => x != null));
@@ -86,12 +87,34 @@ const scoringFunctions: ScoringDefinition[] = [
 		voices: [true, true, true],
 	},
 	{
+		fn: scoreNoteCount,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		params: [{
+			name: "Q Note count",
+			range: [0, 160],
+			value: 8,
+			type: "int",
+		}],
+		voices: [true, true, true],
+	},
+	{
 		fn: scoreGrowthDensity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
 		params: [{
-			name: "Target density",
-			range: [0, 1],
+			name: "Target density bass",
+			range: [0, 20],
+			value: 0.5,
+			type: "float",
+		}, {
+			name: "Target density mid",
+			range: [0, 20],
+			value: 0.5,
+			type: "float",
+		}, {
+			name: "Target density high",
+			range: [0, 20],
 			value: 0.5,
 			type: "float",
 		}],
