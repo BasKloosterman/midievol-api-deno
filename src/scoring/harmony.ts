@@ -9,10 +9,6 @@ import {
 import { ScoringsFunction } from "./index.ts";
 import { limitMelody } from "./util.ts";
 
-const allowedChords: Record<string, Set<number>> = {
-	majorTriad: new Set([0, 4, 7]),
-};
-
 export const scoreMaj7: ScoringsFunction = (
 	{ melody, voiceSplits, voices },
 ) => {
@@ -122,6 +118,11 @@ export const scoreInKey: ScoringsFunction = (
 	return maxScore * 2 - 1;
 };
 
+const allowedChords: Record<string, Set<number>> = {
+	majorTriad: new Set([0, 4, 7]),
+	minorTriad: new Set([0, 3, 7]),
+};
+
 export const scoreMeasureForChord: ScoringsFunction = (
 	{ melody, params, voiceSplits, voices },
 ) => {
@@ -134,15 +135,21 @@ export const scoreMeasureForChord: ScoringsFunction = (
 
 	const bars = getMeasures(melody);
 
+	
+
 	const scores = bars.map((measure) => {
 		const best = measure.reduce((maxScore, note) => {
 			const pitch = Math.round(note.pitch / 10);
-			if (pitch < minPitch || pitch > maxPitch) return maxScore;
+
+			if (pitch < minPitch || pitch > maxPitch) {
+				return maxScore
+			};
 
 			const root = pitch % 12;
 			const normalized = measure.map((n) =>
-				(Math.round(n.pitch / 10) % 12 - root) % 12
-			);
+				((Math.round(n.pitch / 10) % 12) - root + 12) % 12
+			).sort();
+			
 			const total = normalized.length;
 
 			const bestChordScore = Math.max(
@@ -150,8 +157,9 @@ export const scoreMeasureForChord: ScoringsFunction = (
 					const matchCount = normalized.filter((p) =>
 						chordSet.has(p)
 					).length;
+
 					const similarity = matchCount / total;
-					return -Math.abs(similarity - 0.8);
+					return (1 - Math.abs(similarity - 0.8) - 0.2) / (0.8)
 				}),
 			);
 
