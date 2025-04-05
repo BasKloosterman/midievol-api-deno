@@ -131,7 +131,6 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		} else {
 			scores.push(-1)
 		}
-		console.log('low', params[0].value, evolvedMelody.length, scores.at(-1))
 	}
 
 	// Mid
@@ -142,7 +141,6 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		} else {
 			scores.push(-1)
 		}
-		console.log('mid', params[1].value, evolvedMelody.length, scores.at(-1))
 	}
 
 	// High
@@ -153,7 +151,6 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		} else {
 			scores.push(-1)
 		}
-		console.log('high', params[2].value, evolvedMelody.length, scores.at(-1))
 	}
 	
 	return scores.reduce((acc, cur) => acc + cur) / scores.length
