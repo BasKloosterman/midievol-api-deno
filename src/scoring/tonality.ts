@@ -104,10 +104,12 @@ function calculateTonalityScore(pitches: number[]) {
 	};
 }
 
-export const scoreTonality: ScoringsFunction = ({ melody, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreTonality: ScoringsFunction = (
+	{ melody, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const roundedPitches = melody.map((n) => Math.round(n.pitch / 10));
 	const result = calculateTonalityScore(roundedPitches);

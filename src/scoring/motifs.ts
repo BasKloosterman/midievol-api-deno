@@ -88,20 +88,24 @@ function scoreMelody(
 	return [totalScore, motifMap];
 }
 
-export const scoreMelodicMotifs: ScoringsFunction = ({ melody, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreMelodicMotifs: ScoringsFunction = (
+	{ melody, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const [score] = scoreMelody(melody, 2, 8, "melodic");
 	return score;
 };
 
-export const scoreRhythmicMotifs: ScoringsFunction = ({ melody, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
-if (melody.length === 0) {
-	return null
-}
+export const scoreRhythmicMotifs: ScoringsFunction = (
+	{ melody, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
+	if (melody.length === 0) {
+		return null;
+	}
 	const [score] = scoreMelody(melody, 2, 8, "rhythmic");
 	return score;
 };

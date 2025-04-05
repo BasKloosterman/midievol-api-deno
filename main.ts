@@ -4,18 +4,16 @@ import { evolveHandler, getFunctionsHandler, initHandler } from "./handlers.ts";
 
 export async function accessLogger(ctx: Context, next: () => Promise<unknown>) {
 	const start = Date.now();
-  
+
 	await next(); // Call downstream middleware
-  
+
 	const responseTime = Date.now() - start;
 	console.log(
-	  `${ctx.request.method} ${ctx.request.url.pathname} - ${ctx.response.status} - ${responseTime}ms`
+		`${ctx.request.method} ${ctx.request.url.pathname} - ${ctx.response.status} - ${responseTime}ms`,
 	);
-  }
+}
 
 const router = new Router();
-
-
 
 router
 	.post("/evolve", evolveHandler)

@@ -191,7 +191,7 @@ export function pearsonCorr(a: number[], b: number[]): number {
 
 export function limitMelody(
 	melody: Note[],
-	voicesSplits: {min: number, max: number},
+	voicesSplits: { min: number; max: number },
 	voices: [boolean, boolean, boolean],
 ): Note[] {
 	let min_ = 0;

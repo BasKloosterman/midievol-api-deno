@@ -39,11 +39,12 @@ function calculateSegmentDensities(
 
 export const scoreAvgNoteDist: ScoringsFunction = ({
 	melody,
-	voiceSplits, voices ,
+	voiceSplits,
+	voices,
 }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const lengthPairs = melody.slice(0, -1).map((note, i) =>
 		[note.length, melody[i + 1].length] as [number, number]
@@ -54,23 +55,25 @@ export const scoreAvgNoteDist: ScoringsFunction = ({
 
 export const scoreTotalDist: ScoringsFunction = ({
 	melody,
-	voiceSplits, voices,
+	voiceSplits,
+	voices,
 }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
-if (melody.length === 0) {
-	return null
-}
+	melody = limitMelody(melody, voiceSplits, voices);
+	if (melody.length === 0) {
+		return null;
+	}
 	return calcTotalLen(melody);
 };
 
 export const scoreNormalizedDistanceForMelody: ScoringsFunction = ({
 	melody,
-	voiceSplits, voices,
+	voiceSplits,
+	voices,
 }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
-if (melody.length === 0) {
-	return null
-}
+	melody = limitMelody(melody, voiceSplits, voices);
+	if (melody.length === 0) {
+		return null;
+	}
 	const dists = calcNoteDists(melody);
 	const sixteenthNote = framesPerQNote / 4;
 	const halfNote = framesPerQNote * 2;
@@ -87,13 +90,11 @@ if (melody.length === 0) {
 	return -1 + (score / melody.length) * 2;
 };
 
-export const _scoreGrowthDensity = ({melody, density, totalDuration}: {
-	melody : Note[];
+export const _scoreGrowthDensity = ({ melody, density, totalDuration }: {
+	melody: Note[];
 	density: number;
 	totalDuration: number;
 }) => {
-	
-	
 	let numSegments = Math.ceil(totalDuration / framesPerQNote);
 
 	if (
@@ -105,53 +106,74 @@ export const _scoreGrowthDensity = ({melody, density, totalDuration}: {
 		numSegments = Math.ceil(totalDuration / (framesPerQNote * 4));
 	}
 
-
 	const targetDensity = density || 1;
 	return calculateSegmentDensities(
-		melody,
-		totalDuration,
-		targetDensity,
-		Math.max(numSegments, 1),
-	) * 2 + 1;
+				melody,
+				totalDuration,
+				targetDensity,
+				Math.max(numSegments, 1),
+			) * 2 + 1;
 };
 
 export const scoreGrowthDensity: ScoringsFunction = ({
 	melody,
-	voiceSplits, voices,
+	voiceSplits,
+	voices,
 	params,
 }) => {
-	const scores : number[] = []
+	const scores: number[] = [];
 	const totalDuration = calcTotalLen(melody);
 
 	// Bass
 	if (voices[0]) {
-		const evolvedMelody = limitMelody(melody, voiceSplits, [true, false, false])
-		if (melody.length > 0) {
-			scores.push(_scoreGrowthDensity({melody: evolvedMelody, density: params[0].value, totalDuration}))
-		} else {
-			scores.push(-1)
-		}
+		const evolvedMelody = limitMelody(melody, voiceSplits, [
+			true,
+			false,
+			false,
+		]);
+		scores.push(
+			_scoreGrowthDensity({
+				melody: evolvedMelody,
+				density: params[0].value,
+				totalDuration,
+			}),
+		);
+		// console.log('low', params[0].value, evolvedMelody.length, scores.at(-1))
 	}
 
 	// Mid
 	if (voices[1]) {
-		const evolvedMelody = limitMelody(melody, voiceSplits, [false, true, false])
-		if (melody.length > 0) {
-			scores.push(_scoreGrowthDensity({melody: evolvedMelody, density: params[1].value, totalDuration}))
-		} else {
-			scores.push(-1)
-		}
+		const evolvedMelody = limitMelody(melody, voiceSplits, [
+			false,
+			true,
+			false,
+		]);
+		scores.push(
+			_scoreGrowthDensity({
+				melody: evolvedMelody,
+				density: params[1].value,
+				totalDuration,
+			}),
+		);
+		// console.log('mid', params[1].value, evolvedMelody.length, scores.at(-1))
 	}
 
 	// High
 	if (voices[2]) {
-		const evolvedMelody = limitMelody(melody, voiceSplits, [false, false, true])
-		if (melody.length > 0) {
-			scores.push(_scoreGrowthDensity({melody: evolvedMelody, density: params[2].value, totalDuration}))
-		} else {
-			scores.push(-1)
-		}
+		const evolvedMelody = limitMelody(melody, voiceSplits, [
+			false,
+			false,
+			true,
+		]);
+		scores.push(
+			_scoreGrowthDensity({
+				melody: evolvedMelody,
+				density: params[2].value,
+				totalDuration,
+			}),
+		);
+		// console.log('high', params[2].value, evolvedMelody.length, scores.at(-1))
 	}
-	
-	return scores.reduce((acc, cur) => acc + cur) / scores.length
+
+	return scores.reduce((acc, cur) => acc + cur) / scores.length;
 };

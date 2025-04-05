@@ -2,6 +2,7 @@
 
 import { Note } from "./src/notes/index.ts";
 import { Param, score, ScoringsFunction } from "./src/scoring/index.ts";
+import { sumBy } from "./util.ts";
 export interface ScoringDefinition {
 	fn: ScoringsFunction;
 	weight: number;
@@ -25,7 +26,7 @@ export function randAdd(
 }
 
 export function normalizeChildren(
-	children: {melody: Note[], scores: score[]}[],
+	children: { melody: Note[]; scores: score[] }[],
 	scoreFuncs: ScoringDefinition[],
 ) {
 	const scoresByFunc = children.map((child) => child.scores);
@@ -40,11 +41,13 @@ export function normalizeChildren(
 		(_, i: number) => normalizedScoresByFunc.map((row) => row[i]),
 	);
 
-	const newChildren: {melody: Note[], scores: score[], normalizedScores: score[]}[] = children.map(
-		(child, idx) => {
-			return {...child, normalizedScores: normalizedScoresByChild[idx]};
-		},
-	);
+	const newChildren: {
+		melody: Note[];
+		scores: score[];
+		normalizedScores: score[];
+	}[] = children.map((child, idx) => {
+		return { ...child, normalizedScores: normalizedScoresByChild[idx] };
+	});
 
 	return newChildren;
 }
@@ -59,20 +62,52 @@ const maxNoteLength = framesPerQNote * 4;
 const maxVolume = 127;
 const maxSongLength = framesPerQNote * 64;
 
-function evoNote(note: Note, mutSize: number): Note {
+type mutSize = "small" | "medium" | "large";
+
+const getMutSize = (): mutSize => {
+	const roll = Math.random();
+
+	if (roll < probSmallMutation) {
+		return "small";
+	}
+	if (roll < probSmallMutation + probMediumMutation) {
+		return "medium";
+	}
+
+	return "large";
+};
+
+// Determines how much a note evolution can change
+// the different props of a note
+const deviationSet = (mutSize: mutSize) => {
+	if (mutSize === "small") {
+		return {
+			pitchDev: 30,
+			lengthDev: framesPerQNote,
+			volDev: 30,
+			posDev: framesPerQNote,
+		};
+	}
+	if (mutSize === "medium") {
+		return {
+			pitchDev: 70,
+			lengthDev: framesPerQNote * 2,
+			volDev: 60,
+			posDev: framesPerQNote * 2,
+		};
+	}
+	return {
+		pitchDev: 120,
+		lengthDev: framesPerQNote * 4,
+		volDev: 127,
+		posDev: framesPerQNote * 4,
+	};
+};
+
+function evoNote(note: Note, mutSize: mutSize): Note {
 	const newNote = note.copy();
 
-	let deviationSet = () => {
-		if (mutSize < probSmallMutation) {
-			return [30, framesPerQNote, 30, framesPerQNote];
-		}
-		if (mutSize < probSmallMutation + probMediumMutation) {
-			return [70, framesPerQNote * 2, 60, framesPerQNote * 2];
-		}
-		return [120, framesPerQNote * 4, 127, framesPerQNote * 4];
-	};
-
-	const [pitchDev, lengthDev, volDev, posDev] = deviationSet();
+	const { pitchDev, lengthDev, volDev, posDev } = deviationSet(mutSize);
 
 	newNote.pitch = clamp(randAdd(note.pitch, pitchDev, 4), 0, maxReach);
 	newNote.length = clamp(
@@ -90,7 +125,7 @@ function evoNote(note: Note, mutSize: number): Note {
 	return newNote;
 }
 
-function evoChild(melody: Note[], mutSize: number): Note[] {
+function evoChild(melody: Note[], mutSize: mutSize): Note[] {
 	let nEvos = 0;
 	const child: Note[] = [];
 
@@ -98,10 +133,13 @@ function evoChild(melody: Note[], mutSize: number): Note[] {
 		const mutChance = Math.random();
 		let mutate = false;
 
-		if (mutSize < probSmallMutation) mutate = mutChance <= 0.1;
-		else if (mutSize < probSmallMutation + probMediumMutation) {
+		if (mutSize === "small") {
+			mutate = mutChance <= 0.1;
+		} else if (mutSize === "medium") {
 			mutate = mutChance <= 0.2;
-		} else mutate = mutChance <= 0.4;
+		} else {
+			mutate = mutChance <= 0.4;
+		}
 
 		if (mutate) {
 			child.push(evoNote(note, mutSize));
@@ -115,31 +153,42 @@ function evoChild(melody: Note[], mutSize: number): Note[] {
 }
 
 function accordingToMutSize(
-	mutSize: number,
+	mutSize: mutSize,
 	small = 0.01,
 	medium = 0.03,
 	large = 0.05,
 ): boolean {
 	const roll = Math.random();
-	if (mutSize < probSmallMutation) return roll < small;
-	if (mutSize < probSmallMutation + probMediumMutation) return roll < medium;
+	if (mutSize === "small") {
+		return roll < small;
+	}
+
+	if (mutSize === "medium") {
+		return roll < medium;
+	}
+
 	return roll < large;
 }
 
 function grabNoteSet(
 	melody: Note[],
-	mutSize: number,
+	mutSize: mutSize,
 	size?: number,
 ): [number, number] {
 	let numNotes: number;
 
 	if (size === undefined) {
 		const len = melody.length;
-		const notesPerc = mutSize < probSmallMutation
-			? Math.random() * 0.1
-			: mutSize < probSmallMutation + probMediumMutation
-			? Math.random() * 0.15 + 0.05
-			: Math.random() * 0.2 + 0.1;
+		let notesPerc: number;
+
+		if (mutSize === "small") {
+			notesPerc = Math.random() * 0.1;
+		} else if (mutSize === "medium") {
+			notesPerc = Math.random() * 0.15 + 0.05;
+		} else {
+			notesPerc = Math.random() * 0.2 + 0.1;
+		}
+
 		numNotes = Math.ceil(notesPerc * len);
 	} else {
 		numNotes = size;
@@ -149,7 +198,7 @@ function grabNoteSet(
 	return [pos, Math.min(pos + numNotes, melody.length)];
 }
 
-function duplicateNotes(melody: Note[], mutSize: number): Note[] {
+function duplicateNotes(melody: Note[], mutSize: mutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	const lastNote = melody[melody.length - 1];
@@ -164,13 +213,13 @@ function duplicateNotes(melody: Note[], mutSize: number): Note[] {
 	return melody;
 }
 
-function removeNotes(melody: Note[], mutSize: number): Note[] {
+function removeNotes(melody: Note[], mutSize: mutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	melody.splice(start, stop - start);
 	return melody;
 }
 
-function reversePitches(melody: Note[], mutSize: number): void {
+function reversePitches(melody: Note[], mutSize: mutSize): void {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	if (notes.length < 2) return;
@@ -182,7 +231,7 @@ function reversePitches(melody: Note[], mutSize: number): void {
 	notes.forEach((n) => (n.pitch = max - (n.pitch - min)));
 }
 
-function reverseNotes(melody: Note[], mutSize: number): void {
+function reverseNotes(melody: Note[], mutSize: mutSize): void {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	if (notes.length < 2) return;
@@ -196,45 +245,17 @@ function reverseNotes(melody: Note[], mutSize: number): void {
 	}
 }
 
-// def combine_scores(scores, score_funcs):
-//         results = []
-//         # calc total weight
-//         total = sum([abs(x[1]) for x in score_funcs])
-//         if total == 0:
-//             return 0
-        
-//         # print('total', total)
-        
-//         # 10 1 1
-//         # 2 2 2
-
-//         for idx, s in enumerate(score_funcs):
-//             # 0 if fn, 1 is weight
-//             factor = s[1]
-            
-//             if factor == 0:
-//                 continue
-
-//             weight = abs(factor / total)
-//             corrected_score = 1 + scores[idx]
-
-//             if factor < 0 :
-//                 corrected_score = 2 - corrected_score
-
-//             results.append(corrected_score *  weight)
-
-//         return -1 + sum(results)
-
 export function combineScores(
 	scores: score[],
 	scoreDefs: ScoringDefinition[],
 ): number {
-	const total = scoreDefs.reduce((acc, def) => acc + Math.abs(def.weight), 0);
+	const total = sumBy(scoreDefs, (s) => s.weight);
 	if (total === 0) {
 		return 0;
 	}
 
-	const result = scores.filter(x => x != null)
+	const result = scores
+		.filter((x) => x != null)
 		.reduce((sum, score, idx) => {
 			const { weight } = scoreDefs[idx];
 			if (weight === 0) {
@@ -242,9 +263,9 @@ export function combineScores(
 			}
 			const adjusted = weight < 0 ? 2 - (1 + score) : 1 + score;
 			return sum + adjusted * Math.abs(weight / total);
-		}, 0)
+		}, 0);
 
-	return -1 + result
+	return -1 + result;
 }
 
 export function evo(
@@ -252,7 +273,7 @@ export function evo(
 	nChildren: number,
 	nGens: number,
 	scoreDefs: ScoringDefinition[],
-	voiceSplits: {min: number, max: number},
+	voiceSplits: { min: number; max: number },
 ) {
 	if (melody.length === 0) {
 		throw new Error("Cannot evolve empty melody");
@@ -263,7 +284,7 @@ export function evo(
 	let nScore: score = 0;
 
 	for (let gen = 0; gen < nGens; gen++) {
-		const children: {melody: Note[], scores: score[]}[] = [];
+		const children: { melody: Note[]; scores: score[] }[] = [];
 
 		// First add self to compare to original later
 		const scores = scoreDefs.map((def) =>
@@ -276,15 +297,16 @@ export function evo(
 				})
 				: 0
 		);
-		children.push({melody: nMelody.slice(), scores});
+		children.push({ melody: nMelody.slice(), scores });
 
 		// console.log('parent', children)
 
-		const mutSize = Math.random();
+		const mutSize = getMutSize();
 
 		for (let i = 0; i < nChildren; i++) {
 			let evolved: Note[] = [];
 
+			// Duplicate random note
 			if (accordingToMutSize(mutSize)) {
 				evolved.push(
 					nMelody[Math.floor(Math.random() * nMelody.length)],
@@ -293,10 +315,11 @@ export function evo(
 
 			evolved = evoChild(evolved.concat(nMelody), mutSize);
 
+			// Remove random note
 			if (accordingToMutSize(mutSize) && evolved.length > 4) {
 				evolved.splice(Math.floor(Math.random() * evolved.length), 1);
 			}
-
+			// swap a couple of notes in place
 			if (accordingToMutSize(mutSize)) {
 				reverseNotes(evolved, mutSize);
 			}
@@ -309,6 +332,7 @@ export function evo(
 			if (accordingToMutSize(mutSize)) {
 				evolved = removeNotes(evolved, mutSize);
 			}
+			// swap a couple of pitches in place
 			if (accordingToMutSize(mutSize)) {
 				reversePitches(evolved, mutSize);
 			}
@@ -324,7 +348,7 @@ export function evo(
 					: 0
 			);
 
-			children.push({melody: evolved.slice(), scores: evolvedScores});
+			children.push({ melody: evolved.slice(), scores: evolvedScores });
 		}
 
 		// console.log('children', children)
@@ -333,17 +357,22 @@ export function evo(
 
 		// console.log('normalizedChildren', normalizedChildren)
 
-		const scoredChildren =
-			normalizedChildren.map(({melody, scores, normalizedScores}) => ({
+		const scoredChildren = normalizedChildren.map(
+			({ melody, scores, normalizedScores }) => ({
 				melody,
 				scores,
 				normalizedScores,
 				combinedScore: combineScores(normalizedScores, scoreDefs),
-			}));
+			}),
+		);
 
-		const maxScore = Math.max(...scoredChildren.map((c) => c.combinedScore).filter(x => x != null));
-		const maxScoredChildren = scoredChildren.filter((c) =>
-			c.combinedScore === maxScore
+		const maxScore = Math.max(
+			...scoredChildren.map((c) => c.combinedScore).filter((x) =>
+				x != null
+			),
+		);
+		const maxScoredChildren = scoredChildren.filter(
+			(c) => c.combinedScore === maxScore,
 		);
 
 		const idx = Math.floor(Math.random() * maxScoredChildren.length);
@@ -355,5 +384,5 @@ export function evo(
 		nScore = ret.combinedScore;
 	}
 
-	return {melody: nMelody, scores: nScoreList, score: nScore}
+	return { melody: nMelody, scores: nScoreList, score: nScore };
 }

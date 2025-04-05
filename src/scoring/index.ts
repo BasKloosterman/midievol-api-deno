@@ -14,6 +14,7 @@ export {
 export { scoreMelodicMotifs, scoreRhythmicMotifs } from "./motifs.ts";
 export { scoreTonality } from "./tonality.ts";
 export { scoreNormalizeMelodic } from "./normalize.ts";
+export { scoreNoteDiversity } from "./enthropy.ts";
 import { Note } from "../notes/index.ts";
 
 export type ParamType = "note" | "float" | "int";
@@ -27,10 +28,10 @@ export interface Param {
 interface ScoringsFunctionArgs {
 	melody: Note[];
 	params: Param[];
-	voiceSplits: {min: number, max: number};
+	voiceSplits: { min: number; max: number };
 	voices: [boolean, boolean, boolean];
 }
 
-export type score = number | null
+export type score = number | null;
 
 export type ScoringsFunction = (args: ScoringsFunctionArgs) => score;

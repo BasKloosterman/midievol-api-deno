@@ -7,7 +7,7 @@ import {
 } from "./evo.ts";
 import { melodyToDNA, Note, parseDNA } from "./src/notes/index.ts";
 import {
-score,
+	score,
 	scoreGridness16th,
 	scoreGrowthDensity,
 	scoreMeasureForChord,
@@ -21,19 +21,22 @@ score,
 import { Context } from "jsr:@oak/oak/context";
 import { limitMelody } from "./src/scoring/util.ts";
 import { scoreNoteCount } from "./src/scoring/normalize.ts";
+import { scoreNoteDiversity } from "./src/scoring/enthropy.ts";
 
 function normalizeMinInfToZero(scores: score[], debug = false): score[] {
-	const minScore = -1 * Math.min(...scores.filter(x => x != null));
+	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
 	const m = minScore === 0 ? 0 : 1 / minScore;
-	return scores.map((score) => score == null ? null :(1 + m * score) * 2 - 1);
+	return scores.map((score) =>
+		score == null ? null : (1 + m * score) * 2 - 1
+	);
 }
 
 function normalizeMinOneToOne(scores: score[], debug = false): score[] {
-	const min = Math.min(...scores.filter(x => x != null));
-	const max = Math.max(...scores.filter(x => x != null));
+	const min = Math.min(...scores.filter((x) => x != null));
+	const max = Math.max(...scores.filter((x) => x != null));
 	const diff = max - min;
 	const m = diff === 0 ? 1 : 2 / diff;
-	return scores.map((score) => score == null ? null :-1 + m * (score - min));
+	return scores.map((score) => score == null ? null : -1 + m * (score - min));
 }
 
 const scoringFunctions: ScoringDefinition[] = [
@@ -121,6 +124,26 @@ const scoringFunctions: ScoringDefinition[] = [
 		voices: [true, true, true],
 	},
 	{
+		fn: scoreNoteDiversity,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		params: [
+			{
+				name: "Target diversity",
+				range: [0, 1],
+				value: 1,
+				type: "float",
+			},
+			{
+				name: "Note length preference",
+				range: [0, 1],
+				value: 0.5,
+				type: "float",
+			},
+		],
+		voices: [true, true, true],
+	},
+	{
 		fn: scoreMeasureForChord,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
@@ -160,7 +183,7 @@ export async function evolveHandler(ctx: Context) {
 	const voices = body.voices;
 	const melody = parseDNA(body.dna).sort((a, b) => a.position - b.position);
 
-	const {melody: evolved, scores: scoresPerFunc, score} = evo(
+	const { melody: evolved, scores: scoresPerFunc, score } = evo(
 		melody,
 		body.children || 50,
 		body.x_gens,
@@ -194,7 +217,10 @@ export async function initHandler(ctx: Context) {
 			: 0
 	);
 
-	const children: {melody: Note[], scores: score[]}[] = [{melody, scores}];
+	const children: { melody: Note[]; scores: score[] }[] = [{
+		melody,
+		scores,
+	}];
 	const normalized = normalizeChildren(children, updatedFuncs);
 	const [notes, scoresPerFunc, score] = [
 		normalized[0].melody,

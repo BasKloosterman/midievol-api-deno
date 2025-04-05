@@ -18,21 +18,25 @@ const normLengthMax = framesPerQNote;
 // 	return maxScore * penalty;
 // }
 
-export const scoreNoteCount: ScoringsFunction = ({ melody, voiceSplits, voices, params }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreNoteCount: ScoringsFunction = (
+	{ melody, voiceSplits, voices, params },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 
-	const len = calcTotalLen(melody)
+	const len = calcTotalLen(melody);
 
-	return -Math.abs((params[0].value * framesPerQNote) - len)
-}
+	return -Math.abs((params[0].value * framesPerQNote) - len);
+};
 
-export const scoreNormalizeMelodic: ScoringsFunction = ({ melody, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreNormalizeMelodic: ScoringsFunction = (
+	{ melody, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	let pitchPenalty = 0;
 	for (const note of melody) {

@@ -7,11 +7,11 @@ export const scoreGridness16th: ScoringsFunction = ({
 	melody,
 	params,
 	voiceSplits,
-	voices
+	voices,
 }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const optimumParam = params.length > 0 ? params[0].value : 0.5;
 	const optimum = optimumParam || 1;

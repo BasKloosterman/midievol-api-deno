@@ -13,10 +13,12 @@ const allowedChords: Record<string, Set<number>> = {
 	majorTriad: new Set([0, 4, 7]),
 };
 
-export const scoreMaj7: ScoringsFunction = ({ melody, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreMaj7: ScoringsFunction = (
+	{ melody, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const measures = divideInMeasures(melody).filter((m) => m.length > 1);
 	if (measures.length === 0) return -1000;
@@ -61,10 +63,12 @@ function getSimultaneousNoteSets(notes: Note[]): Note[][] {
 	return sets;
 }
 
-export const scoreSimultaneousIntervals: ScoringsFunction = ({ melody, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreSimultaneousIntervals: ScoringsFunction = (
+	{ melody, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const sets = getSimultaneousNoteSets(melody);
 	const normalizedSets = sets.map((set) =>
@@ -100,10 +104,12 @@ const keys = [
 	),
 ];
 
-export const scoreInKey: ScoringsFunction = ({ melody, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreInKey: ScoringsFunction = (
+	{ melody, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const normalizedNotes = melody.map((n) => Math.round(n.pitch / 10) % 12);
 
@@ -116,10 +122,12 @@ export const scoreInKey: ScoringsFunction = ({ melody, voiceSplits, voices }) =>
 	return maxScore * 2 - 1;
 };
 
-export const scoreMeasureForChord: ScoringsFunction = ({ melody, params, voiceSplits, voices }) => {
-	melody = limitMelody(melody, voiceSplits, voices)
+export const scoreMeasureForChord: ScoringsFunction = (
+	{ melody, params, voiceSplits, voices },
+) => {
+	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null
+		return null;
 	}
 	const minPitch = params[0]?.value ?? 0;
 	const maxPitch = params[1]?.value ?? 127;
@@ -154,8 +162,8 @@ export const scoreMeasureForChord: ScoringsFunction = ({ melody, params, voiceSp
 	});
 
 	const score = scores.length > 0
-	? scores.reduce((a, b) => a + b, 0) / scores.length
-	: 0;
+		? scores.reduce((a, b) => a + b, 0) / scores.length
+		: 0;
 
-	return score 
+	return score;
 };
