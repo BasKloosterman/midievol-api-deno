@@ -41,13 +41,6 @@ function normalizeMinOneToOne(scores: score[], debug = false): score[] {
 
 const scoringFunctions: ScoringDefinition[] = [
 	{
-		fn: scoreGridness16th,
-		weight: 0,
-		normalizationFn: normalizeMinOneToOne,
-		params: [{ name: "Optimum", range: [0, 1], value: 0, type: "float" }],
-		voices: [true, true, true],
-	},
-	{
 		fn: scoreMelodicMotifs,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
@@ -90,18 +83,6 @@ const scoringFunctions: ScoringDefinition[] = [
 		voices: [true, true, true],
 	},
 	{
-		fn: scoreNoteCount,
-		weight: 0,
-		normalizationFn: normalizeMinOneToOne,
-		params: [{
-			name: "Q Note count",
-			range: [0, 160],
-			value: 8,
-			type: "int",
-		}],
-		voices: [true, true, true],
-	},
-	{
 		fn: scoreGrowthDensity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
@@ -120,6 +101,25 @@ const scoringFunctions: ScoringDefinition[] = [
 			range: [0, 20],
 			value: 0.5,
 			type: "float",
+		}],
+		voices: [true, true, true],
+	},
+	{
+		fn: scoreGridness16th,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		params: [{ name: "Optimum", range: [0, 1], value: 0, type: "float" }],
+		voices: [true, true, true],
+	},
+	{
+		fn: scoreNoteCount,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		params: [{
+			name: "Q Note count",
+			range: [0, 160],
+			value: 8,
+			type: "int",
 		}],
 		voices: [true, true, true],
 	},
