@@ -135,21 +135,19 @@ export const scoreMeasureForChord: ScoringsFunction = (
 
 	const bars = getMeasures(melody);
 
-	
-
 	const scores = bars.map((measure) => {
 		const best = measure.reduce((maxScore, note) => {
 			const pitch = Math.round(note.pitch / 10);
 
 			if (pitch < minPitch || pitch > maxPitch) {
-				return maxScore
-			};
+				return maxScore;
+			}
 
 			const root = pitch % 12;
 			const normalized = measure.map((n) =>
 				((Math.round(n.pitch / 10) % 12) - root + 12) % 12
 			).sort();
-			
+
 			const total = normalized.length;
 
 			const bestChordScore = Math.max(
@@ -159,7 +157,7 @@ export const scoreMeasureForChord: ScoringsFunction = (
 					).length;
 
 					const similarity = matchCount / total;
-					return (1 - Math.abs(similarity - 0.8) - 0.2) / (0.8)
+					return (1 - Math.abs(similarity - 0.8) - 0.2) / (0.8);
 				}),
 			);
 

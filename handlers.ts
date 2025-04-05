@@ -83,25 +83,10 @@ const scoringFunctions: ScoringDefinition[] = [
 		voices: [true, true, true],
 	},
 	{
-		fn: scoreGrowthDensity,
+		fn: scoreMeasureForChord,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		params: [{
-			name: "Target density bass",
-			range: [0, 20],
-			value: 0.5,
-			type: "float",
-		}, {
-			name: "Target density mid",
-			range: [0, 20],
-			value: 0.5,
-			type: "float",
-		}, {
-			name: "Target density high",
-			range: [0, 20],
-			value: 0.5,
-			type: "float",
-		}],
+		params: [],
 		voices: [true, true, true],
 	},
 	{
@@ -144,13 +129,25 @@ const scoringFunctions: ScoringDefinition[] = [
 		voices: [true, true, true],
 	},
 	{
-		fn: scoreMeasureForChord,
+		fn: scoreGrowthDensity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		params: [
-			{ name: "Min pitch", range: [0, 84], value: 0, type: "note" },
-			{ name: "Max pitch", range: [0, 84], value: 84, type: "note" },
-		],
+		params: [{
+			name: "Target density bass",
+			range: [0, 20],
+			value: 0.5,
+			type: "float",
+		}, {
+			name: "Target density mid",
+			range: [0, 20],
+			value: 0.5,
+			type: "float",
+		}, {
+			name: "Target density high",
+			range: [0, 20],
+			value: 0.5,
+			type: "float",
+		}],
 		voices: [true, true, true],
 	},
 ];
