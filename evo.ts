@@ -370,13 +370,35 @@ export function evo(
 			if (accordingToMutSize(mutSize)) {
 				evolved = duplicateNotes(evolved, mutSize);
 			}
+
+			evolved.sort((a, b) => a.position - b.position);
+
 			if (accordingToMutSize(mutSize)) {
 				evolved = removeNotes(evolved, mutSize);
 			}
+
+			if (!evolved.length) {
+				continue
+			}
+
+			// if (accordingToMutSize(mutSize)) {
+			// 	evolved = insertTimePeriod(evolved, mutSize)
+			// }
+
+			// evolved.sort((a, b) => a.position - b.position);
+
+			// if (accordingToMutSize(mutSize)) {
+			// 	evolved = deleteTimePeriod(evolved, mutSize)
+			// }
+			// if (!evolved.length) {
+			// 	continue
+			// }
 			// swap a couple of pitches in place
 			if (accordingToMutSize(mutSize)) {
 				reversePitches(evolved, mutSize);
 			}
+
+			evolved.sort((a, b) => a.position - b.position);
 
 			const evolvedScores = scoreDefs.map((def) =>
 				def.weight !== 0
