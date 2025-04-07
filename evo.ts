@@ -110,23 +110,14 @@ function evoNote(note: Note, mutSize: mutSize): Note {
 	const { pitchDev, lengthDev, volDev, posDev } = deviationSet(mutSize);
 
 	newNote.pitch = clamp(randAdd(note.pitch, pitchDev, 4), 0, maxReach);
-	newNote.length = clamp(
-		randAdd(note.length, lengthDev, 4),
-		75,
-		maxNoteLength,
-	);
+	newNote.length =  Math.max(randAdd(note.length, lengthDev, 4), 75);
 	newNote.volume = clamp(randAdd(note.volume, volDev, 4), 0, maxVolume);
-	newNote.position = clamp(
-		randAdd(note.position, posDev, 4),
-		0,
-		maxSongLength,
-	);
+	newNote.position = Math.max(randAdd(note.position, posDev, 4), 0)
 
 	return newNote;
 }
 
 function evoChild(melody: Note[], mutSize: mutSize): Note[] {
-	let nEvos = 0;
 	const child: Note[] = [];
 
 	for (const note of melody) {
