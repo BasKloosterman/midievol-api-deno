@@ -10,7 +10,8 @@ function calculateNoteLengthDiversity(
 
 	// Frequency count
 	const frequencyMap = new Map<number, number>();
-	for (const length of noteLengths) {
+	for (let length of noteLengths) {
+		length = Math.round(length % 75)
 		frequencyMap.set(length, (frequencyMap.get(length) || 0) + 1);
 	}
 
