@@ -121,6 +121,8 @@ export const scoreInKey: ScoringsFunction = (
 const allowedChords: Record<string, Set<number>> = {
 	majorTriad: new Set([0, 4, 7]),
 	minorTriad: new Set([0, 3, 7]),
+	dominant: new Set([0, 5, 7, 10]),
+	minorSeveth: new Set([0, 3, 7, 10]),
 };
 
 export const scoreMeasureForChord: ScoringsFunction = (
@@ -130,18 +132,12 @@ export const scoreMeasureForChord: ScoringsFunction = (
 	if (melody.length === 0) {
 		return null;
 	}
-	const minPitch = params[0]?.value ?? 0;
-	const maxPitch = params[1]?.value ?? 127;
 
 	const bars = getMeasures(melody);
 
 	const scores = bars.map((measure) => {
 		const best = measure.reduce((maxScore, note) => {
 			const pitch = Math.round(note.pitch / 10);
-
-			if (pitch < minPitch || pitch > maxPitch) {
-				return maxScore;
-			}
 
 			const root = pitch % 12;
 			const normalized = measure.map((n) =>
@@ -156,10 +152,13 @@ export const scoreMeasureForChord: ScoringsFunction = (
 						chordSet.has(p)
 					).length;
 
+					
 					const similarity = matchCount / total;
 					return (1 - Math.abs(similarity - 0.8) - 0.2) / (0.8);
 				}),
 			);
+
+			
 
 			return Math.max(maxScore, bestChordScore);
 		}, 0);
