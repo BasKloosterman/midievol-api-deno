@@ -64,7 +64,7 @@ const maxSongLength = framesPerQNote * 64;
 
 type mutSize = "small" | "medium" | "large";
 
-const getMutSize = (): mutSize => {
+export const getMutSize = (): mutSize => {
 	const roll = Math.random();
 
 	if (roll < probSmallMutation) {
