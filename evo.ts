@@ -134,13 +134,12 @@ function evoChild(melody: Note[], mutSize: mutSize): Note[] {
 
 		if (mutate) {
 			child.push(evoNote(note, mutSize));
-			nEvos++;
 		} else {
 			child.push(note.copy());
 		}
 	}
 
-	return nEvos > 0 ? child : evoChild(melody, mutSize);
+	return child;
 }
 
 function accordingToMutSize(
