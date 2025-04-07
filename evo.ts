@@ -357,7 +357,7 @@ export function evo(
 			evolved = evoChild(evolved.concat(nMelody), mutSize);
 
 			// Remove random note
-			if (accordingToMutSize(mutSize) && evolved.length > 4) {
+			if (accordingToMutSize(mutSize) && evolved.length > 1) {
 				evolved.splice(Math.floor(Math.random() * evolved.length), 1);
 			}
 			// swap a couple of notes in place
