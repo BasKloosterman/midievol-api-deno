@@ -31,7 +31,7 @@ function normalizeMinInfToZero(scores: score[], debug = false): score[] {
 	);
 }
 
-function normalizeMinOneToOne(scores: score[], debug = false): score[] {
+export function normalizeMinOneToOne(scores: score[], debug = false): score[] {
 	const min = Math.min(...scores.filter((x) => x != null));
 	const max = Math.max(...scores.filter((x) => x != null));
 	const diff = max - min;
@@ -39,7 +39,7 @@ function normalizeMinOneToOne(scores: score[], debug = false): score[] {
 	return scores.map((score) => score == null ? null : -1 + m * (score - min));
 }
 
-const scoringFunctions: ScoringDefinition[] = [
+export const scoringFunctions: ScoringDefinition[] = [
 	{
 		fn: scoreMelodicMotifs,
 		weight: 0,
@@ -134,17 +134,17 @@ const scoringFunctions: ScoringDefinition[] = [
 		normalizationFn: normalizeMinOneToOne,
 		params: [{
 			name: "Target density bass",
-			range: [0, 20],
+			range: [0, 8],
 			value: 0.5,
 			type: "float",
 		}, {
 			name: "Target density mid",
-			range: [0, 20],
+			range: [0, 8],
 			value: 0.5,
 			type: "float",
 		}, {
 			name: "Target density high",
-			range: [0, 20],
+			range: [0, 8],
 			value: 0.5,
 			type: "float",
 		}],
