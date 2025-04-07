@@ -106,11 +106,10 @@ export const _scoreGrowthDensity = ({ melody, density, totalDuration }: {
 		numSegments = Math.ceil(totalDuration / (framesPerQNote * 4));
 	}
 
-	const targetDensity = density || 1;
 	return calculateSegmentDensities(
 				melody,
 				totalDuration,
-				targetDensity,
+				density,
 				Math.max(numSegments, 1),
 			) * 2 + 1;
 };
