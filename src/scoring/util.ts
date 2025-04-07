@@ -136,13 +136,22 @@ export function normalizeIntervals(
 	return rawIntervals.map(mapInterval);
 }
 
+
+
 export function calcTotalLen(notes: Note[]): number {
 	if (notes.length < 2) return notes[0]?.length || 0;
-	return (
-		notes[notes.length - 1].position -
-		notes[0].position +
-		notes[notes.length - 1].length
-	);
+
+	return Math.max(...notes.map(n => n.position + n.length))
+    // let loopRange_ = Math.ceil(latestNote / (1 * framesPerQNote));
+    // if (latestNote % (1 * framesPerQNote) === 0) {
+    //     loopRange_ += 1;
+    // }
+
+
+	// return (
+	// 	notes.at(-1)!.position +
+	// 	notes.at(-1)!.length
+	// );
 }
 
 export function getMeasures(notes: Note[]): Note[][] {
