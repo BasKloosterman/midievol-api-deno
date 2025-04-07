@@ -188,12 +188,42 @@ function grabNoteSet(
 	return [pos, Math.min(pos + numNotes, melody.length)];
 }
 
-function duplicateNotes(melody: Note[], mutSize: mutSize): Note[] {
+export function insertTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
-	const lastNote = melody[melody.length - 1];
-	const offset = lastNote.position + lastNote.length;
 
+	if (notes.length === 0) return melody;
+
+	const timeOffset = notes.at(-1)!.position + notes.at(-1)!.length - notes[0].position;
+
+	// Shift all notes after `notes[stop - 1]`
+	for (let i = stop; i < melody.length; i++) {
+		melody[i].position += timeOffset;
+	}
+
+	// Duplicate notes and insert at the same location
+	const duplicated = notes.map(n => {
+		const nn = n.copy();
+		nn.position += 0; // keep same relative position
+		return nn;
+	});
+
+	melody.splice(stop, 0, ...duplicated);
+
+	return melody;
+}
+
+
+export function duplicateNotes(melody: Note[], mutSize: mutSize): Note[] {
+	const [start, stop] = grabNoteSet(melody, mutSize);
+	const notes = melody.slice(start, stop);
+	const lastNote = melody.at(-1);
+	if (!lastNote) {
+		return melody
+	}
+	let offset = Math.round((lastNote.position + lastNote.length) * Math.random());
+
+	offset  = offset - notes.at(0)?.position!
 	for (const n of notes) {
 		const nn = n.copy();
 		nn.position += offset;
@@ -203,7 +233,28 @@ function duplicateNotes(melody: Note[], mutSize: mutSize): Note[] {
 	return melody;
 }
 
-function removeNotes(melody: Note[], mutSize: mutSize): Note[] {
+export function deleteTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
+	const [start, stop] = grabNoteSet(melody, mutSize);
+	if (start >= melody.length) return melody;
+
+	const notesToRemove = melody.slice(start, stop);
+	if (notesToRemove.length === 0) return melody;
+
+	const timeOffset = notesToRemove.at(-1)!.position + notesToRemove.at(-1)!.length - notesToRemove[0].position;
+
+	// Remove the notes
+	melody.splice(start, stop - start);
+
+	// Shift all notes after `stop` back in time
+	for (let i = start; i < melody.length; i++) {
+		melody[i].position -= timeOffset;
+	}
+
+	return melody;
+}
+
+
+export function removeNotes(melody: Note[], mutSize: mutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	melody.splice(start, stop - start);
 	return melody;
