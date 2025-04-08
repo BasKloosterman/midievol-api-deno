@@ -1,6 +1,32 @@
 import { ScoringsFunction } from "./index.ts";
 import { limitMelody } from "./util.ts";
 
+
+function scoreNoteLengthsByPreference(notes: number[], preference: number): number {
+	if (notes.length === 0) return 0;
+
+	// Define min and max lengths
+	const minLen = 75;
+	const maxLen = 2400;
+
+	// Interpolate target length
+	const target = minLen + preference * (maxLen - minLen);
+
+	// Define a helper to score closeness to target (1 = exact match, 0 = farthest)
+	function proximityScore(length: number): number {
+		const maxDist = Math.max(target - minLen, maxLen - target);
+		const dist = Math.abs(length - target);
+		return 1 - Math.min(dist / maxDist, 1); // clamp to [0, 1]
+	}
+
+	const scores = notes.map(note => proximityScore(note));
+	const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+	return avgScore;
+}
+
+
+
 function calculateNoteLengthDiversity(
 	noteLengths: number[],
 	targetDiversity: number = 1,
@@ -32,33 +58,13 @@ function calculateNoteLengthDiversity(
 	const diversity = maxEntropy > 0 ? entropy / maxEntropy : 0;
 
 	// Score based on diversity target
-	let score = 1 - Math.abs(diversity - targetDiversity);
+	const score = 1 - Math.abs(diversity - targetDiversity);
 
-	// Duration preference only matters if targetDiversity is low
-	if (targetDiversity < 0.2 && frequencyMap.size === 1) {
-		const preferredMin = 75;
-		const preferredMax = 3600;
+	// Combine with original score, reduce influence if poor match
+	const scoreLengthScore = scoreNoteLengthsByPreference(noteLengths, noteLengthPreference);
 
-		const dominantLength = Array.from(frequencyMap.keys())[0];
 
-		// Normalize note length to [0,1] scale
-		const normalizedLength = Math.min(
-			1,
-			Math.max(
-				0,
-				(dominantLength - preferredMin) / (preferredMax - preferredMin),
-			),
-		);
-
-		// Score the match to the preference (closer = better)
-		const preferenceMatch = 1 -
-			Math.abs(normalizedLength - noteLengthPreference);
-
-		// Combine with original score, reduce influence if poor match
-		score *= preferenceMatch;
-	}
-
-	return score;
+	return (targetDiversity * score) + ((1 - targetDiversity) * scoreLengthScore);
 }
 
 export const scoreNoteDiversity: ScoringsFunction = (
