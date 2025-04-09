@@ -61,6 +61,7 @@ export const calcMelodyLength = (melody: Note[]) => {
 
 
 const run = () => {
+	console.time("evoGen Timer");
 	let melody = parseDNA(createRandomMelody(40)).sort((a, b) => a.position - b.position);
 	let i = 0;
 	const gens = 1000;
@@ -82,7 +83,7 @@ const run = () => {
 		const { melody: evolved} = evo(
 			melody,
 			100,
-			10,
+			100,
 			n,
 			{min : 0, max: 84},
 		);
@@ -95,7 +96,7 @@ const run = () => {
 
 		i++
 	}
-
+	console.timeEnd("evoGen Timer");
 	writeFileSync('./test_output.json', JSON.stringify(notesPerGen))
 }
 
