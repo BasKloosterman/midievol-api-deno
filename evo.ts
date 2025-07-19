@@ -2,13 +2,16 @@
 
 import { Note } from "./src/notes/index.ts";
 import { Param, score, ScoringsFunction } from "./src/scoring/index.ts";
+import { applySplitVoices } from "./src/scoring/util.ts";
 import { sumBy } from "./util.ts";
 export interface ScoringDefinition {
 	fn: ScoringsFunction;
 	weight: number;
 	normalizationFn: (scores: score[], debug?: boolean) => score[];
+	hasAbsoluteScore: boolean;
 	params: Param[];
 	voices: [boolean, boolean, boolean];
+	splitVoices: boolean;
 }
 
 export function clamp(n: number, minVal: number, maxVal: number): number {
@@ -52,9 +55,9 @@ export function normalizeChildren(
 	return newChildren;
 }
 
-const probSmallMutation = 0.7;
-const probMediumMutation = 0.2;
-const probLargeMutation = 0.1;
+const probSmallMutation = 0.9;
+const probMediumMutation = 0.09;
+const probLargeMutation = 0.01;
 
 const maxReach = 840;
 const framesPerQNote = 600;
@@ -117,7 +120,7 @@ function evoNote(note: Note, mutSize: mutSize): Note {
 	return newNote;
 }
 
-function evoChild(melody: Note[], mutSize: mutSize): Note[] {
+function evoChild(melody: Note[], mutSize: mutSize, small = 0.05, medium = 0.1, large = 0.2): Note[] {
 	const child: Note[] = [];
 
 	for (const note of melody) {
@@ -125,11 +128,11 @@ function evoChild(melody: Note[], mutSize: mutSize): Note[] {
 		let mutate = false;
 
 		if (mutSize === "small") {
-			mutate = mutChance <= 0.1;
+			mutate = mutChance <= small;
 		} else if (mutSize === "medium") {
-			mutate = mutChance <= 0.2;
+			mutate = mutChance <= medium;
 		} else {
-			mutate = mutChance <= 0.4;
+			mutate = mutChance <= large;
 		}
 
 		if (mutate) {
@@ -330,17 +333,16 @@ export function evo(
 		// First add self to compare to original later
 		const scores = scoreDefs.map((def) =>
 			def.weight !== 0
-				? def.fn({
+				? applySplitVoices(def.fn, {
 					melody,
 					params: def.params,
 					voiceSplits,
 					voices: def.voices,
+					splitVoices: def.splitVoices
 				})
 				: 0
 		);
 		children.push({ melody: nMelody.slice(), scores });
-
-		// console.log('parent', children)
 
 		const mutSize = getMutSize();
 
@@ -367,13 +369,13 @@ export function evo(
 
 			evolved.sort((a, b) => a.position - b.position);
 
-			if (accordingToMutSize(mutSize)) {
+			if (accordingToMutSize(mutSize, 0.001)) {
 				evolved = duplicateNotes(evolved, mutSize);
 			}
 
 			evolved.sort((a, b) => a.position - b.position);
 
-			if (accordingToMutSize(mutSize)) {
+			if (accordingToMutSize(mutSize, 0.001)) {
 				evolved = removeNotes(evolved, mutSize);
 			}
 
@@ -402,11 +404,12 @@ export function evo(
 
 			const evolvedScores = scoreDefs.map((def) =>
 				def.weight !== 0
-					? def.fn({
+					? applySplitVoices(def.fn, {
 						melody: evolved,
 						params: def.params,
 						voiceSplits,
 						voices: def.voices,
+						splitVoices: def.splitVoices
 					})
 					: 0
 			);

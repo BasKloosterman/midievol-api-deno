@@ -107,11 +107,11 @@ export const _scoreGrowthDensity = ({ melody, density, totalDuration }: {
 	}
 
 	return calculateSegmentDensities(
-				melody,
-				totalDuration,
-				density,
-				Math.max(numSegments, 1),
-			) * 2 + 1;
+		melody,
+		totalDuration,
+		density,
+		Math.max(numSegments, 1),
+	);
 };
 
 export const scoreGrowthDensity: ScoringsFunction = ({

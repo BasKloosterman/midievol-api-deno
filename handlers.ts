@@ -44,62 +44,79 @@ export const scoringFunctions: ScoringDefinition[] = [
 		fn: scoreMelodicMotifs,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: false,
 		params: [],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreRhythmicMotifs,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: false,
 		params: [],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreNormalizeMelodic,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: false,
 		params: [],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreNormalizedDistanceForMelody,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: true,
 		params: [],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreTonality,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: true,
 		params: [],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreSimultaneousIntervals,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: true,
 		params: [],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreMeasureForChord,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: true,
 		params: [],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreGridness16th,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: true,
 		params: [{ name: "Optimum", range: [0, 1], value: 0, type: "float" }],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreNoteCount,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: false,
 		params: [{
 			name: "Q Note count",
 			range: [0, 160],
@@ -107,11 +124,13 @@ export const scoringFunctions: ScoringDefinition[] = [
 			type: "int",
 		}],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreNoteDiversity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: false,
 		params: [
 			{
 				name: "Target diversity",
@@ -127,11 +146,13 @@ export const scoringFunctions: ScoringDefinition[] = [
 			},
 		],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 	{
 		fn: scoreGrowthDensity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
+		hasAbsoluteScore: false,
 		params: [{
 			name: "Target density bass",
 			range: [0, 8],
@@ -149,6 +170,7 @@ export const scoringFunctions: ScoringDefinition[] = [
 			type: "float",
 		}],
 		voices: [true, true, true],
+		splitVoices: false
 	},
 ];
 
@@ -160,6 +182,7 @@ function updateFuncWeights(userMods: any[]): ScoringDefinition[] {
 			weight: mod.weight,
 			params: mod.params,
 			voices: mod.voices,
+			splitVoices: mod.splitVoices
 		};
 	});
 }
@@ -170,6 +193,9 @@ export async function getFunctionsHandler(ctx: Context) {
 		weight: f.weight,
 		params: f.params,
 		voices: f.voices,
+		normalizationFunc: f.normalizationFn.name,
+		hasAbsoluteScore: f.hasAbsoluteScore,
+		splitVoices: f.splitVoices
 	}));
 	ctx.response.body = response;
 }
@@ -210,6 +236,7 @@ export async function initHandler(ctx: Context) {
 				params: s.params,
 				voiceSplits: voices,
 				voices: s.voices,
+				splitVoices: s.splitVoices
 			})
 			: 0
 	);

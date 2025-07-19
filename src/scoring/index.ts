@@ -25,11 +25,12 @@ export interface Param {
 	type: ParamType;
 }
 
-interface ScoringsFunctionArgs {
+export interface ScoringsFunctionArgs {
 	melody: Note[];
 	params: Param[];
 	voiceSplits: { min: number; max: number };
 	voices: [boolean, boolean, boolean];
+	splitVoices: boolean;
 }
 
 export type score = number | null;
