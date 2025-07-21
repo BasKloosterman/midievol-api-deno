@@ -64,7 +64,7 @@ function calculateNoteLengthDiversity(
 	const scoreLengthScore = scoreNoteLengthsByPreference(noteLengths, noteLengthPreference);
 
 
-	return (targetDiversity * score) + ((1 - targetDiversity) * scoreLengthScore);
+	return ((targetDiversity * score) + ((1 - targetDiversity) * scoreLengthScore)) * 2 - 1;
 }
 
 export const scoreNoteDiversity: ScoringsFunction = (

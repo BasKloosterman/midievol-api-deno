@@ -8,10 +8,12 @@ export interface ScoringDefinition {
 	fn: ScoringsFunction;
 	weight: number;
 	normalizationFn: (scores: score[], debug?: boolean) => score[];
-	hasAbsoluteScore: boolean;
+	// Indicates that the score is normalized between -1 and 1
+	hasNormalizedScore: boolean;
 	params: Param[];
 	voices: [boolean, boolean, boolean];
 	splitVoices: boolean;
+	scoreRange: [score, score];
 }
 
 export function clamp(n: number, minVal: number, maxVal: number): number {
@@ -38,8 +40,9 @@ export function normalizeChildren(
 	);
 
 	const normalizedScoresByFunc = transposed.map((s: score[], idx: number) =>
-		scoreFuncs[idx].normalizationFn(s, idx === 5)
+		scoreFuncs[idx].normalizationFn(s)
 	);
+
 	const normalizedScoresByChild = normalizedScoresByFunc[0].map(
 		(_, i: number) => normalizedScoresByFunc.map((row) => row[i]),
 	);
@@ -55,9 +58,9 @@ export function normalizeChildren(
 	return newChildren;
 }
 
-const probSmallMutation = 0.9;
-const probMediumMutation = 0.09;
-const probLargeMutation = 0.01;
+const probSmallMutation = 0.8;
+const probMediumMutation = 0.15;
+const probLargeMutation = 0.05;
 
 const maxReach = 840;
 const framesPerQNote = 600;
@@ -120,7 +123,7 @@ function evoNote(note: Note, mutSize: mutSize): Note {
 	return newNote;
 }
 
-function evoChild(melody: Note[], mutSize: mutSize, small = 0.05, medium = 0.1, large = 0.2): Note[] {
+function evoChild(melody: Note[], mutSize: mutSize, small = 0.05, medium = 0.15, large = 0.3): Note[] {
 	const child: Note[] = [];
 
 	for (const note of melody) {
@@ -293,7 +296,7 @@ export function combineScores(
 	scores: score[],
 	scoreDefs: ScoringDefinition[],
 ): number {
-	const total = sumBy(scoreDefs, (s) => s.weight);
+	const total = sumBy(scoreDefs, (s) => Math.abs(s.weight));
 	if (total === 0) {
 		return 0;
 	}
@@ -305,8 +308,9 @@ export function combineScores(
 			if (weight === 0) {
 				return sum;
 			}
+
 			const adjusted = weight < 0 ? 2 - (1 + score) : 1 + score;
-			return sum + adjusted * Math.abs(weight / total);
+			return sum + adjusted * (Math.abs(weight) / total);
 		}, 0);
 
 	return -1 + result;
@@ -329,7 +333,6 @@ export function evo(
 
 	for (let gen = 0; gen < nGens; gen++) {
 		const children: { melody: Note[]; scores: score[] }[] = [];
-
 		// First add self to compare to original later
 		const scores = scoreDefs.map((def) =>
 			def.weight !== 0
@@ -340,12 +343,12 @@ export function evo(
 					voices: def.voices,
 					splitVoices: def.splitVoices
 				})
-				: 0
+				: null
 		);
 		children.push({ melody: nMelody.slice(), scores });
 
 		const mutSize = getMutSize();
-
+		
 		for (let i = 0; i < nChildren; i++) {
 			let evolved: Note[] = [];
 
@@ -357,6 +360,7 @@ export function evo(
 			}
 
 			evolved = evoChild(evolved.concat(nMelody), mutSize);
+
 
 			// Remove random note
 			if (accordingToMutSize(mutSize) && evolved.length > 1) {
@@ -411,18 +415,16 @@ export function evo(
 						voices: def.voices,
 						splitVoices: def.splitVoices
 					})
-					: 0
+					: null
 			);
 
 			children.push({ melody: evolved.slice(), scores: evolvedScores });
 		}
 
-		// console.log('children', children)
 
 		const normalizedChildren = normalizeChildren(children, scoreDefs);
 
-		// console.log('normalizedChildren', normalizedChildren)
-
+		
 		const scoredChildren = normalizedChildren.map(
 			({ melody, scores, normalizedScores }) => ({
 				melody,
@@ -437,17 +439,18 @@ export function evo(
 				x != null
 			),
 		);
+
 		const maxScoredChildren = scoredChildren.filter(
 			(c) => c.combinedScore === maxScore,
 		);
 
 		const idx = Math.floor(Math.random() * maxScoredChildren.length);
 
-		const ret = maxScoredChildren[idx];
+		const bestChild = maxScoredChildren[idx];
 
-		nMelody = ret.melody;
-		nScoreList = ret.scores;
-		nScore = ret.combinedScore;
+		nMelody = bestChild.melody;
+		nScoreList = bestChild.scores;
+		nScore = bestChild.combinedScore;
 	}
 
 	return { melody: nMelody, scores: nScoreList, score: nScore };

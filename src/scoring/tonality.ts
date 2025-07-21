@@ -52,11 +52,11 @@ function calculateTonalityScore(pitches: number[]) {
 	for (let root = 0; root < 12; root++) {
 		const majorCorr = pearsonCorr(
 			noteDistribution,
-			rotate(MAJOR_PROFILE, root),
+			rotate(MAJOR_PROFILE, 12-root),
 		);
 		const minorCorr = pearsonCorr(
 			noteDistribution,
-			rotate(MINOR_PROFILE, root),
+			rotate(MINOR_PROFILE, 12-root),
 		);
 
 		if (majorCorr > bestScore) {
@@ -113,5 +113,6 @@ export const scoreTonality: ScoringsFunction = (
 	}
 	const roundedPitches = melody.map((n) => Math.round(n.pitch / 10));
 	const result = calculateTonalityScore(roundedPitches);
-	return result.tonalityScore * 2 - 1;
+
+	return result.tonalityScore;
 };

@@ -1,7 +1,8 @@
 import { framesPerQNote, Note, qNote } from "../notes/index.ts";
 import { calcTotalLen, limitMelody } from "./util.ts";
-import { ScoringsFunction } from "./index.ts";
+import { score, ScoringsFunction } from "./index.ts";
 import { calcNoteDists } from "./util.ts";
+import { maxHeaderSize } from "node:http";
 
 const eighthNote = qNote / 2;
 
@@ -84,11 +85,120 @@ export const scoreNormalizedDistanceForMelody: ScoringsFunction = ({
 		} else if (d > halfNote) {
 			return acc + (1 - Math.min((d - halfNote) / halfNote, 1));
 		}
-		return acc;
+		return acc + 1;
 	}, 0);
 
-	return -1 + (score / melody.length) * 2;
+	return ((score / melody.length) * 2) - 1;
 };
+
+// scoreOverlap award point for notes that overlap, the more notes overlap with
+// at the same time the higher the score.
+export const _scoreOverlap = ({
+	melody,
+	optimum
+	
+} : {melody: Note[], optimum: number}) => {
+
+	if (melody.length < 2) {
+		return 1 - optimum
+	}
+
+	optimum = Math.round(optimum)
+	const overlapsPerNote : number[] = melody.map(x => 0)
+	
+	for (const [idx, curNote] of melody.slice(0, melody.length - 1).entries()) {
+
+		const overlappingPitches : number[] = []
+		const pitch = Math.round(curNote.pitch / 10)
+
+		const start = curNote.position
+		const end = curNote.position + curNote.length
+
+		for (const [innerIdx, otherNote] of melody.slice(idx + 1).entries()) {
+			const otherNoteIdx = idx + (innerIdx + 1) 
+			
+			const overlappingPitch = Math.round(otherNote.pitch / 10)
+
+			if (
+				otherNote.position >= start
+				&&
+				otherNote.position <= end
+				&&
+				pitch != overlappingPitch
+				&&
+				!overlappingPitches.includes(overlappingPitch)
+			) {
+				overlappingPitches.push(overlappingPitch)
+				overlapsPerNote[idx] += 1
+				overlapsPerNote[otherNoteIdx] += 1
+			}
+		}
+	}
+
+	const penalty = overlapsPerNote.reduce(
+		(acc, val) => acc + Math.abs(val - optimum),
+		0
+	)
+
+	return 1 - (penalty / melody.length)
+};
+
+export const scoreOverlap: ScoringsFunction = ({
+	melody,
+	voiceSplits,
+	voices,
+	params,
+}) => {
+	let scores: score[] = [];
+
+	// Bass
+	if (voices[0]) {
+		const evolvedMelody = limitMelody(melody, voiceSplits, [
+			true,
+			false,
+			false,
+		]);
+		scores.push(
+			_scoreOverlap({
+				melody: evolvedMelody,
+				optimum: params[0].value,
+			}),
+		);
+	}
+
+	// Mid
+	if (voices[1]) {
+		const evolvedMelody = limitMelody(melody, voiceSplits, [
+			false,
+			true,
+			false,
+		]);
+		scores.push(
+			_scoreOverlap({
+				melody: evolvedMelody,
+				optimum: params[1].value,
+			}),
+		);
+	}
+
+	// High
+	if (voices[2]) {
+		const evolvedMelody = limitMelody(melody, voiceSplits, [
+			false,
+			false,
+			true,
+		]);
+		scores.push(
+			_scoreOverlap({
+				melody: evolvedMelody,
+				optimum: params[2].value,
+			}),
+		);
+	}
+
+	return scores.reduce((acc, cur) => acc! + cur!, 0)! / scores.length;
+};
+
 
 export const _scoreGrowthDensity = ({ melody, density, totalDuration }: {
 	melody: Note[];

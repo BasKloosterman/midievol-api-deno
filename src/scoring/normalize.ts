@@ -28,9 +28,10 @@ export const scoreNoteCount: ScoringsFunction = (
 
 	const len = calcTotalLen(melody);
 
-	return -Math.abs((params[0].value * framesPerQNote) - len);
+	return  -Math.abs((params[0].value * framesPerQNote) - len);
 };
 
+// Deprecated, not usefull anymore, is regulated in other funcs
 export const scoreNormalizeMelodic: ScoringsFunction = (
 	{ melody, voiceSplits, voices },
 ) => {
@@ -62,6 +63,6 @@ export const scoreNormalizeMelodic: ScoringsFunction = (
 		Math.min(450, Math.max(0, Math.abs(avgLengthPenalty))) * (2 / 450);
 
 	const scoreNoteCountNorm = 1 - Math.abs(melody.length - 15) * (1 / 15);
-
-	return (scoreReach + scoreNoteCountNorm + scoreLength) / 3;
+	// Returns 0..1 so transform to -1..1
+	return ((scoreReach + scoreNoteCountNorm + scoreLength) / 3) * 2 - 1;
 };

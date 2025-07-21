@@ -22,6 +22,7 @@ import { Context } from "jsr:@oak/oak/context";
 import { limitMelody } from "./src/scoring/util.ts";
 import { scoreNoteCount } from "./src/scoring/normalize.ts";
 import { scoreNoteDiversity } from "./src/scoring/enthropy.ts";
+import { scoreOverlap } from "./src/scoring/position.ts";
 
 function normalizeMinInfToZero(scores: score[], debug = false): score[] {
 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
@@ -44,79 +45,85 @@ export const scoringFunctions: ScoringDefinition[] = [
 		fn: scoreMelodicMotifs,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: false,
+		hasNormalizedScore: false,
 		params: [],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [0, null],
+	}, {
 		fn: scoreRhythmicMotifs,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: false,
+		hasNormalizedScore: false,
 		params: [],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
-		fn: scoreNormalizeMelodic,
+		splitVoices: false,
+		scoreRange: [0, null],
+	}, {
+		fn: scoreOverlap,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: false,
-		params: [],
+		hasNormalizedScore: false,
+		params: [{
+			name: "Target overlap bass",
+			range: [0, 8],
+			value: 0,
+			type: "int",
+		}, {
+			name: "Target overlap mid",
+			range: [0, 8],
+			value: 3,
+			type: "int",
+		}, {
+			name: "Target overlap high",
+			range: [0, 8],
+			value: 0,
+			type: "int",
+		}],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
-		fn: scoreNormalizedDistanceForMelody,
-		weight: 0,
-		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: true,
-		params: [],
-		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [null, 1],
+	}, {
 		fn: scoreTonality,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: true,
+		hasNormalizedScore: true,
 		params: [],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [-1, 1],
+	}, {
 		fn: scoreSimultaneousIntervals,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: true,
+		hasNormalizedScore: true,
 		params: [],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [-1, 1],
+	}, {
 		fn: scoreMeasureForChord,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: true,
+		hasNormalizedScore: true,
 		params: [],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [-1, 1],
+	}, {
 		fn: scoreGridness16th,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: true,
+		hasNormalizedScore: true,
 		params: [{ name: "Optimum", range: [0, 1], value: 0, type: "float" }],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [-1, 1],
+	}, {
 		fn: scoreNoteCount,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: false,
+		hasNormalizedScore: false,
 		params: [{
 			name: "Q Note count",
 			range: [0, 160],
@@ -124,13 +131,13 @@ export const scoringFunctions: ScoringDefinition[] = [
 			type: "int",
 		}],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [null, 0],
+	}, {
 		fn: scoreNoteDiversity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: false,
+		hasNormalizedScore: true,
 		params: [
 			{
 				name: "Target diversity",
@@ -146,13 +153,13 @@ export const scoringFunctions: ScoringDefinition[] = [
 			},
 		],
 		voices: [true, true, true],
-		splitVoices: false
-	},
-	{
+		splitVoices: false,
+		scoreRange: [-1, 1],
+	}, {
 		fn: scoreGrowthDensity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
-		hasAbsoluteScore: false,
+		hasNormalizedScore: false,
 		params: [{
 			name: "Target density bass",
 			range: [0, 8],
@@ -170,8 +177,9 @@ export const scoringFunctions: ScoringDefinition[] = [
 			type: "float",
 		}],
 		voices: [true, true, true],
-		splitVoices: false
-	},
+		splitVoices: false,
+		scoreRange: [null, 0],
+	}
 ];
 
 function updateFuncWeights(userMods: any[]): ScoringDefinition[] {
@@ -194,8 +202,9 @@ export async function getFunctionsHandler(ctx: Context) {
 		params: f.params,
 		voices: f.voices,
 		normalizationFunc: f.normalizationFn.name,
-		hasAbsoluteScore: f.hasAbsoluteScore,
-		splitVoices: f.splitVoices
+		hasNormalizedScore: f.hasNormalizedScore,
+		splitVoices: f.splitVoices,
+		scoreRange: f.scoreRange
 	}));
 	ctx.response.body = response;
 }
