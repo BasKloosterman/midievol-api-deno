@@ -302,14 +302,19 @@ export function combineScores(
 	}
 
 	const result = scores
-		.filter((x) => x != null)
-		.reduce((sum, score, idx) => {
-			const { weight } = scoreDefs[idx];
-			if (weight === 0) {
+		.reduce((sum : number, score, idx) => {
+			if (score === null) {
 				return sum;
 			}
 
+			const { weight } = scoreDefs[idx];
+
+			if (weight === 0) {
+				return sum;
+			}
+			
 			const adjusted = weight < 0 ? 2 - (1 + score) : 1 + score;
+
 			return sum + adjusted * (Math.abs(weight) / total);
 		}, 0);
 
