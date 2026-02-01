@@ -2,7 +2,7 @@ import { framesPerQNote, Note, qNote } from "../notes/index.ts";
 import { calcTotalLen, limitMelody } from "./util.ts";
 import { score, ScoringsFunction } from "./index.ts";
 import { calcNoteDists } from "./util.ts";
-import { maxHeaderSize } from "node:http";
+
 
 const eighthNote = qNote / 2;
 

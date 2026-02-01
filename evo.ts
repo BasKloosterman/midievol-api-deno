@@ -1,9 +1,9 @@
 // evo.ts
 
-import { calcMelodyLength } from "./main_test.ts";
+
 import { Note, qNote } from "./src/notes/index.ts";
 import { Param, score, ScoringsFunction } from "./src/scoring/index.ts";
-import { applySplitVoices } from "./src/scoring/util.ts";
+import { applySplitVoices, calcTotalLen } from "./src/scoring/util.ts";
 import { sumBy } from "./util.ts";
 export interface ScoringDefinition {
 	fn: ScoringsFunction;
@@ -401,6 +401,11 @@ export function evo(
 		for (let i = 0; i < nChildren; i++) {
 			let evolved: Note[] = [];
 
+			// swap a couple of notes in place
+			if (accordingToMutSize(mutSize)) {
+				reverseNotes(evolved, mutSize);
+			}
+
 			// Duplicate random note
 			if (accordingToMutSize(mutSize)) {
 				evolved.push(
@@ -416,7 +421,7 @@ export function evo(
 			0.03;
 
 			if (Math.random() < spawnChance) {
-				spawnNote(calcMelodyLength(evolved) + 1 * qNote, mutSize)
+				spawnNote(calcTotalLen(evolved) + 1 * qNote, mutSize)
 				evolved.push();
 			}
 
@@ -427,20 +432,14 @@ export function evo(
 			if (accordingToMutSize(mutSize) && evolved.length > 1) {
 				evolved.splice(Math.floor(Math.random() * evolved.length), 1);
 			}
-			// swap a couple of notes in place
-			if (accordingToMutSize(mutSize)) {
-				reverseNotes(evolved, mutSize);
-			}
-
-			evolved.sort((a, b) => a.position - b.position);
 
 			if (accordingToMutSize(mutSize, 0.001)) {
+				evolved.sort((a, b) => a.position - b.position);
 				evolved = duplicateNotes(evolved, mutSize);
 			}
 
-			evolved.sort((a, b) => a.position - b.position);
-
 			if (accordingToMutSize(mutSize, 0.001)) {
+				evolved.sort((a, b) => a.position - b.position);
 				evolved = removeNotes(evolved, mutSize);
 			}
 
