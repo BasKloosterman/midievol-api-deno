@@ -29,9 +29,32 @@ const MINOR_PROFILE = [
 	2.33,
 	2.39,
 ];
+const ALTERED_PENTATONIC_PROFILE = [
+	6.0, // 1
+	4.5, // b2
+	0.5,
+	0.5,
+	3.5, // 3
+	0.5,
+	0.5,
+	0.5,
+	4.0, // #5
+	3.0, // 6
+	0.5,
+	0.5
+  ];
 
 const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
 const MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];
+const ALTERED_PENTATONIC_SCALE = [0, 1, 5, 8, 9];
+
+type scales = "major" | "minor" | "altered_pent"
+
+const scaleIdx : Record<scales, number[]> = {
+	"major": MAJOR_SCALE,
+	"minor": MINOR_SCALE,
+	"altered_pent": ALTERED_PENTATONIC_SCALE
+}
 
 function calculateTonalityScore(pitches: number[]) {
 	if (pitches.length === 0) {
@@ -47,32 +70,41 @@ function calculateTonalityScore(pitches: number[]) {
 	const noteDistribution = noteCounts.map((c) => c / totalNotes);
 
 	let bestScore = -1;
-	let bestKey: [number, "major" | "minor"] | null = null;
+	let bestKey: [number, scales] | null = null;
 
 	for (let root = 0; root < 12; root++) {
-		const majorCorr = pearsonCorr(
+		// const majorCorr = pearsonCorr(
+		// 	noteDistribution,
+		// 	rotate(MAJOR_PROFILE, 12-root),
+		// );
+		// const minorCorr = pearsonCorr(
+		// 	noteDistribution,
+		// 	rotate(MINOR_PROFILE, 12-root),
+		// );
+
+		const altPentCorr = pearsonCorr(
 			noteDistribution,
-			rotate(MAJOR_PROFILE, 12-root),
-		);
-		const minorCorr = pearsonCorr(
-			noteDistribution,
-			rotate(MINOR_PROFILE, 12-root),
+			rotate(ALTERED_PENTATONIC_PROFILE, 12-root),
 		);
 
-		if (majorCorr > bestScore) {
-			bestScore = majorCorr;
-			bestKey = [root, "major"];
-		}
-		if (minorCorr > bestScore) {
-			bestScore = minorCorr;
-			bestKey = [root, "minor"];
+		// if (majorCorr > bestScore) {
+		// 	bestScore = majorCorr;
+		// 	bestKey = [root, "major"];
+		// }
+		// if (minorCorr > bestScore) {
+		// 	bestScore = minorCorr;
+		// 	bestKey = [root, "minor"];
+		// }
+		if (altPentCorr > bestScore) {
+			bestScore = altPentCorr;
+			bestKey = [root, "altered_pent"];
 		}
 	}
 
 	if (!bestKey) throw new Error("No best key found");
 
 	const [root, mode] = bestKey;
-	const scale = mode === "major" ? MAJOR_SCALE : MINOR_SCALE;
+	const scale = scaleIdx[mode];
 	const scaleNotes = scale.map((interval) => (root + interval) % 12);
 
 	const inScaleCount = scaleNotes.reduce(
