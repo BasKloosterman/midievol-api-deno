@@ -461,6 +461,22 @@ export const _scoreAbsoluteDensity = ({
 	return score;
 };
 
+const aggregatePowerMean = (scores: number[], p = -0.5) => {
+	if (!scores.length) return 0;
+	const eps = 1e-9;
+	const xs = scores.map((s) => Math.max(eps, s));
+
+	if (Math.abs(p) < 1e-9) {
+		// geometric mean
+		const avgLog = xs.reduce((a, x) => a + Math.log(x), 0) / xs.length;
+		return Math.exp(avgLog);
+	}
+
+	const avgPow = xs.reduce((a, x) => a + Math.pow(x, p), 0) / xs.length;
+	return Math.pow(avgPow, 1 / p);
+};
+
+
 export const scoreGrowthDensity: ScoringsFunction = ({
 	melody,
 	voiceSplits,
@@ -509,11 +525,15 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		// console.log('high', params[2].value,  high.length, scores.at(-1))
 	}
 
+	// return scores.length ? aggregatePowerMean(scores, -0.7) : 0; // try -0.5 .. -1.5
+
+
 	const avgScore = scores.length
 	? scores.reduce((a, b) => a + b, 0) / scores.length
 	: 0;
 
 	// console.log('avgScore', avgScore)
+	
 
 	return avgScore 
 };
