@@ -205,29 +205,26 @@ export function limitMelody(
 	voices: [boolean, boolean, boolean],
 ): Note[] {
 	let min_ = 0;
-	let max_ = 84;
+	let max_ = 840;
 
 	if (!voices.includes(true)) {
 		return [];
 	}
 	if (voices[0]) {
-		min_ = 0;
+		// min stays min: 0
 	} else if (voices[1]) {
-		min_ = voicesSplits.min;
+		min_ = voicesSplits.min * 10;
 	} else if (voices[2]) {
-		min_ = voicesSplits.max;
+		min_ = voicesSplits.max * 10;
 	}
 
 	if (voices[2]) {
-		max_ = 84;
+		// max stays max: 840
 	} else if (voices[1]) {
-		max_ = voicesSplits.max - 1;
+		max_ = (voicesSplits.max * 10) - 1;
 	} else if (voices[0]) {
-		max_ = voicesSplits.min - 1;
+		max_ = (voicesSplits.min * 10) - 1;
 	}
-
-	min_ *= 10;
-	max_ *= 10;
 
 	return melody.filter((note) => note.pitch >= min_ && note.pitch <= max_);
 }
