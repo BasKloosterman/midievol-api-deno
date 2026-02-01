@@ -440,8 +440,7 @@ export function evo(
 			}
 
 			if (macroMut.spawnNote) {
-				spawnNote(calcTotalLen(evolved) + 1 * qNote)
-				evolved.push();
+				evolved.push(spawnNote(calcTotalLen(evolved) + 1 * qNote));
 			}
 
 			evolved = evoChild(evolved.concat(nMelody), mutSize);
