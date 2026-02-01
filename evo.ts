@@ -1,6 +1,7 @@
 // evo.ts
 
-import { Note } from "./src/notes/index.ts";
+import { calcMelodyLength } from "./main_test.ts";
+import { Note, qNote } from "./src/notes/index.ts";
 import { Param, score, ScoringsFunction } from "./src/scoring/index.ts";
 import { applySplitVoices } from "./src/scoring/util.ts";
 import { sumBy } from "./util.ts";
@@ -110,6 +111,26 @@ const deviationSet = (mutSize: mutSize) => {
 	};
 };
 
+// ✅ ADDED: rare register jump (octave / 2-octave)
+function maybeRegisterJump(note: Note, mutSize: mutSize) {
+	const chance =
+	  mutSize === "small" ? 0.005 :
+	  mutSize === "medium" ? 0.015 :
+	  0.04;
+  
+	if (Math.random() > chance) return;
+  
+	// In jouw pitch-schaal lijkt 1 octaaf = 120 (12 semitones * 10)
+	const oneOct = 120;
+	const twoOct = 240;
+  
+	const jump = Math.random() < 0.8 ? oneOct : twoOct; // 80/20
+	const dir = Math.random() < 0.5 ? -1 : 1;
+  
+	note.pitch = clamp(note.pitch + dir * jump, 0, maxReach);
+}
+  
+
 function evoNote(note: Note, mutSize: mutSize): Note {
 	const newNote = note.copy();
 
@@ -120,8 +141,31 @@ function evoNote(note: Note, mutSize: mutSize): Note {
 	newNote.volume = clamp(randAdd(note.volume, volDev, 4), 0, maxVolume);
 	newNote.position = Math.max(randAdd(note.position, posDev, 4), 0)
 
+	maybeRegisterJump(newNote, mutSize);
+
 	return newNote;
 }
+
+
+  
+function randInt(min: number, max: number) {
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function spawnNote(
+	maxPos: number,
+	mutSize: mutSize
+): Note {
+	const t = new Note()
+	const { lengthDev, volDev, posDev } = deviationSet(mutSize);
+  
+	t.pitch = randInt(0, maxReach);
+	t.length = randInt(0, maxNoteLength)
+	t.volume = randInt(0, maxVolume)
+	t.position = randInt(0, maxPos)
+  
+	return t;
+}  
 
 function evoChild(melody: Note[], mutSize: mutSize, small = 0.05, medium = 0.15, large = 0.3): Note[] {
 	const child: Note[] = [];
@@ -362,6 +406,18 @@ export function evo(
 				evolved.push(
 					nMelody[Math.floor(Math.random() * nMelody.length)],
 				);
+			}
+
+
+			// ✅ ADDED: Spawn a brand new note (very rare)
+			const spawnChance =
+			mutSize === "small" ? 0.002 :
+			mutSize === "medium" ? 0.01 :
+			0.03;
+
+			if (Math.random() < spawnChance) {
+				spawnNote(calcMelodyLength(evolved) + 1 * qNote, mutSize)
+				evolved.push();
 			}
 
 			evolved = evoChild(evolved.concat(nMelody), mutSize);
