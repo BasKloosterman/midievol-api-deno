@@ -62,27 +62,11 @@ function gridScore(
 		Math.min(melody.length, Math.round(optimumFraction * melody.length)),
 	);
 
-	const best = diffs.slice(0, optimumNoteCount).map((x) => x.note);
+	const best = diffs.slice(0, optimumNoteCount)
 
-	// Soft-windowed average distance (no velocity)
-	let weightedDistSum = 0;
-	let weightSum = 0;
+	const avgDev = best.reduce((acc, cur) => acc + cur.dist, 0) / best.length
 
-	for (const n of best) {
-		const dist = distToGrid(n.position, mod);
-		const w = softWindowWeight(dist, mod);
-
-		weightedDistSum += dist * w;
-		weightSum += w;
-	}
-
-	const avgDist =
-		weightSum > 1e-9
-			? weightedDistSum / weightSum
-			: best.reduce((s, n) => s + distToGrid(n.position, mod), 0) / best.length;
-
-	const onGrid01 = scoreValue(0, avgDist, framesPerQNote / 8);
-	return onGrid01 * 2 - 1;
+	return   ((mod / 2) - avgDev) / (mod / 2)
 }
 
 export const scoreGridness16th: ScoringsFunction = ({
@@ -105,7 +89,9 @@ export const scoreGridness16th: ScoringsFunction = ({
 	for (const grid of enabled) {
 		const mod = GRID_MOD[grid];
 		const s = gridScore(melody, mod, optimum);
-		if (bestScore === null || s > bestScore) bestScore = s;
+		if (bestScore === null || s > bestScore) {
+			bestScore = s;
+		}
 	}
 
 	return bestScore;
