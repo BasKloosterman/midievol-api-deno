@@ -165,7 +165,7 @@ function spawnNote(
 	return t;
 }  
 
-function evoChild(melody: Note[], mutSize: mutSize, small = 0.05, medium = 0.15, large = 0.3): Note[] {
+function evoChild(melody: Note[], mutSize: mutSize, small = 0.02, medium = 0.1, large = 0.3): Note[] {
 	const child: Note[] = [];
 
 	for (const note of melody) {
@@ -192,7 +192,7 @@ function evoChild(melody: Note[], mutSize: mutSize, small = 0.05, medium = 0.15,
 
 function accordingToMutSize(
 	mutSize: mutSize,
-	small = 0.01,
+	small = 0.001,
 	medium = 0.03,
 	large = 0.05,
 ): boolean {
@@ -206,6 +206,27 @@ function accordingToMutSize(
 	}
 
 	return roll < large;
+}
+
+function pickMacroMut(mutSize: mutSize)  {
+	const ret = {
+		duplicateRandomNote: false,
+		removeRandomNote: false,
+		reverseNotes: false,
+		duplicateNotes: false,
+		removeNotes: false,
+		reversePitches: false,
+		spawnNote: false
+	}
+	if (!accordingToMutSize(mutSize)) {
+		return ret
+	}
+
+	const retKeys = Object.keys(ret);
+
+	(ret as any)[retKeys[Math.floor(Math.random() * retKeys.length)]] = true
+
+	return ret
 }
 
 function grabNoteSet(
@@ -262,12 +283,12 @@ export function insertTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
 }
 
 
-export function duplicateNotes(melody: Note[], mutSize: mutSize): [Note[], boolean] {
+export function duplicateNotes(melody: Note[], mutSize: mutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	const lastNote = melody.at(-1);
 	if (!lastNote) {
-		return [melody, false]
+		return melody
 	}
 	let offset = Math.round((lastNote.position + lastNote.length) * Math.random());
 
@@ -278,7 +299,7 @@ export function duplicateNotes(melody: Note[], mutSize: mutSize): [Note[], boole
 		melody.push(nn);
 	}
 
-	return [melody, true];
+	return melody
 }
 
 export function deleteTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
@@ -324,11 +345,11 @@ function reversePitches(melody: Note[], mutSize: mutSize): boolean {
 	return true
 }
 
-function reverseNotes(melody: Note[], mutSize: mutSize): boolean {
+function reverseNotes(melody: Note[], mutSize: mutSize) {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	if (notes.length < 2) {
-		return false
+		return
 	}
 
 	for (let i = 0; i < Math.floor(notes.length / 2); i++) {
@@ -338,8 +359,6 @@ function reverseNotes(melody: Note[], mutSize: mutSize): boolean {
 			notes[i].position,
 		];
 	}
-
-	return true
 }
 
 export function combineScores(
@@ -405,51 +424,39 @@ export function evo(
 		const mutSize = getMutSize();
 		
 		for (let i = 0; i < nChildren; i++) {
-			let macroMut = false
+			const macroMut = pickMacroMut(mutSize)
 			let evolved: Note[] = [];
 
 			// swap a couple of notes in place
-			if (!macroMut && accordingToMutSize(mutSize)) {
-				macroMut = reverseNotes(evolved, mutSize);
+			if (macroMut.reverseNotes) {
+				reverseNotes(evolved, mutSize);
 			}
 
 			// Duplicate random note
-			if (!macroMut && accordingToMutSize(mutSize)) {
-				macroMut = true
+			if (macroMut.duplicateRandomNote) {
 				evolved.push(
 					nMelody[Math.floor(Math.random() * nMelody.length)],
 				);
 			}
 
-
-			// ✅ ADDED: Spawn a brand new note (very rare)
-			const spawnChance =
-			mutSize === "small" ? 0.002 :
-			mutSize === "medium" ? 0.01 :
-			0.03;
-
-			if (!macroMut && Math.random() < spawnChance) {
-				macroMut = true
+			if (macroMut.spawnNote) {
 				spawnNote(calcTotalLen(evolved) + 1 * qNote)
 				evolved.push();
 			}
 
 			evolved = evoChild(evolved.concat(nMelody), mutSize);
 
-
 			// Remove random note
-			if (!macroMut && accordingToMutSize(mutSize) && evolved.length > 1) {
-				macroMut = true
+			if (macroMut.removeRandomNote && evolved.length > 1) {
 				evolved.splice(Math.floor(Math.random() * evolved.length), 1);
 			}
 
-			if (!macroMut && accordingToMutSize(mutSize, 0.001)) {
+			if (macroMut.duplicateNotes) {
 				evolved.sort((a, b) => a.position - b.position);
-				[evolved, macroMut] = duplicateNotes(evolved, mutSize);
+				evolved = duplicateNotes(evolved, mutSize);
 			}
 
-			if (!macroMut && accordingToMutSize(mutSize, 0.001)) {
-				macroMut = true
+			if (macroMut.removeNotes) {
 				evolved.sort((a, b) => a.position - b.position);
 				evolved = removeNotes(evolved, mutSize);
 			}
@@ -459,8 +466,8 @@ export function evo(
 			}
 
 			// swap a couple of pitches in place
-			if (!macroMut && accordingToMutSize(mutSize)) {
-				 macroMut = reversePitches(evolved, mutSize);
+			if (macroMut.reversePitches) {
+				reversePitches(evolved, mutSize);
 			}
 
 			evolved.sort((a, b) => a.position - b.position);
