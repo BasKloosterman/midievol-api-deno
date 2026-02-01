@@ -7,13 +7,15 @@ import {
 } from "./evo.ts";
 import { melodyToDNA, Note, parseDNA } from "./src/notes/index.ts";
 import {
+	FuncScore,
 	score,
 	scoreGridness16th,
 	scoreGrowthDensity,
+	ScoreInfo,
 	scoreMeasureForChord,
 	scoreMelodicMotifs,
 	scoreNormalizedDistanceForMelody,
-	scoreNormalizeMelodic,
+	// scoreNormalizeMelodic,
 	scoreRhythmicMotifs,
 	scoreSimultaneousIntervals,
 	scoreTonality,
@@ -24,20 +26,66 @@ import { scoreNoteCount } from "./src/scoring/normalize.ts";
 import { scoreNoteDiversity } from "./src/scoring/enthropy.ts";
 import { scoreOverlap } from "./src/scoring/position.ts";
 
-function normalizeMinInfToZero(scores: score[], debug = false): score[] {
-	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
-	const m = minScore === 0 ? 0 : 1 / minScore;
-	return scores.map((score) =>
-		score == null ? null : (1 + m * score) * 2 - 1
-	);
+// function normalizeMinInfToZero(scores: (FuncScore | null)[], debug = false): score[] {
+// 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
+// 	const m = minScore === 0 ? 0 : 1 / minScore;
+// 	return scores.map((score) =>
+// 		score == null ? null : (1 + m * score) * 2 - 1
+// 	);
+// }
+
+function minScore(scores: (FuncScore | null)[]) : FuncScore | null {
+	return scores.reduce((acc, cur) => {
+		if (acc == null) {
+			return cur
+		}
+
+		if (cur === null || cur.score === null)
+		{
+			return acc
+		}
+
+		if (acc != null && acc.score != null && cur !== null && cur.score !== null && cur.score < acc.score )
+		{
+			return cur
+		}
+
+		return acc
+	}, null)
 }
 
-export function normalizeMinOneToOne(scores: score[], debug = false): score[] {
-	const min = Math.min(...scores.filter((x) => x != null));
-	const max = Math.max(...scores.filter((x) => x != null));
-	const diff = max - min;
+function maxScore(scores: (FuncScore | null)[]) : FuncScore | null {
+	return scores.reduce((acc, cur) => {
+		if (acc == null) {
+			return cur
+		}
+
+		if (cur === null || cur.score === null)
+		{
+			return acc
+		}
+
+		if (acc != null && acc.score != null && cur !== null && cur.score !== null && cur.score > acc.score )
+		{
+			return cur
+		}
+
+		return acc
+	}, null)
+}
+
+export function normalizeMinOneToOne(scores: (FuncScore | null)[], debug = false): (FuncScore | null)[] {
+	const min = minScore(scores);
+	const max = maxScore(scores);
+
+	if (min === null && max === null) {
+		return scores
+	}
+
+
+	const diff = max!.score! - min!.score!;
 	const m = diff === 0 ? 1 : 2 / diff;
-	return scores.map((score) => score == null ? null : -1 + m * (score - min));
+	return scores.map((score) => ({score: score == null ? null : -1 + m * (score!.score! - min!.score!), info: score!.info}));
 }
 
 export const scoringFunctions: ScoringDefinition[] = [
@@ -247,10 +295,10 @@ export async function initHandler(ctx: Context) {
 				voices: s.voices,
 				splitVoices: s.splitVoices
 			})
-			: 0
+			: {score: 0, info: []}
 	);
 
-	const children: { melody: Note[]; scores: score[] }[] = [{
+	const children: { melody: Note[]; scores: (FuncScore | null)[] }[] = [{
 		melody,
 		scores,
 	}];

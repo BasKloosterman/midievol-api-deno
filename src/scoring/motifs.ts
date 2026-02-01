@@ -96,7 +96,8 @@ export const scoreMelodicMotifs: ScoringsFunction = (
 		return null;
 	}
 	const [score] = scoreMelody(melody, 2, 8, "melodic");
-	return score;
+
+	return {score, info: []};
 };
 
 export const scoreRhythmicMotifs: ScoringsFunction = (
@@ -107,5 +108,5 @@ export const scoreRhythmicMotifs: ScoringsFunction = (
 		return null;
 	}
 	const [score] = scoreMelody(melody, 2, 8, "rhythmic");
-	return score;
+	return {score, info: []};
 };

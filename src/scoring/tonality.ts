@@ -207,5 +207,5 @@ export const scoreTonality: ScoringsFunction = (
 
 	const result = calculateTonalityScore(roundedPitches, getEnabledScales(params[0]));
 
-	return result.tonalityScore;
+	return {score: result.tonalityScore, info: [{name: "key", value: result.bestKey}]};
 };

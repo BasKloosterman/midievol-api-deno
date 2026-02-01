@@ -51,7 +51,7 @@ export const scoreAvgNoteDist: ScoringsFunction = ({
 		[note.length, melody[i + 1].length] as [number, number]
 	);
 	const avgPenalty = average(lengthPairs, calcPenalty);
-	return 1 - (avgPenalty * 2) / eighthNote;
+	return {score: 1 - (avgPenalty * 2) / eighthNote, info: []};
 };
 
 export const scoreTotalDist: ScoringsFunction = ({
@@ -63,7 +63,7 @@ export const scoreTotalDist: ScoringsFunction = ({
 	if (melody.length === 0) {
 		return null;
 	}
-	return calcTotalLen(melody);
+	return {score: calcTotalLen(melody), info: []};
 };
 
 export const scoreNormalizedDistanceForMelody: ScoringsFunction = ({
@@ -88,7 +88,7 @@ export const scoreNormalizedDistanceForMelody: ScoringsFunction = ({
 		return acc + 1;
 	}, 0);
 
-	return ((score / melody.length) * 2) - 1;
+	return {score: ((score / melody.length) * 2) - 1, info: []};
 };
 
 // scoreOverlap award point for notes that overlap, the more notes overlap with
@@ -292,7 +292,7 @@ export const scoreOverlap: ScoringsFunction = ({
 		);
 	}
 
-	return scores.reduce((acc, cur) => acc! + cur!, 0)! / scores.length;
+	return {score: scores.reduce((acc, cur) => acc! + cur!, 0)! / scores.length, info: []};
 };
 
 
@@ -491,6 +491,7 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		const bass = limitMelody(melody, voiceSplits, [true, false, false]);
 		scores.push(
 			_scoreEvenDensity({
+			// _scoreAbsoluteDensity({
 				melody: bass,
 				density: params[0].value,
 				totalDuration,
@@ -504,6 +505,7 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		const mid = limitMelody(melody, voiceSplits, [false, true, false]);
 		scores.push(
 			_scoreEvenDensity({
+			// _scoreAbsoluteDensity({
 				melody: mid,
 				density: params[1].value,
 				totalDuration,
@@ -517,6 +519,7 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		const high = limitMelody(melody, voiceSplits, [false, false, true]);
 		scores.push(
 			_scoreEvenDensity({
+			// _scoreAbsoluteDensity({
 				melody: high,
 				density: params[2].value,
 				totalDuration,
@@ -525,7 +528,7 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 		// console.log('high', params[2].value,  high.length, scores.at(-1))
 	}
 
-	// return scores.length ? aggregatePowerMean(scores, -0.7) : 0; // try -0.5 .. -1.5
+	return {score: scores.length ? aggregatePowerMean(scores, -0.7) : 0, info: []}; // try -0.5 .. -1.5
 
 
 	const avgScore = scores.length
@@ -535,5 +538,5 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 	// console.log('avgScore', avgScore)
 	
 
-	return avgScore 
+	return {score: avgScore, info: []} 
 };

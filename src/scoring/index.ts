@@ -13,7 +13,7 @@ export {
 } from "./harmony.ts";
 export { scoreMelodicMotifs, scoreRhythmicMotifs } from "./motifs.ts";
 export { scoreTonality } from "./tonality.ts";
-export { scoreNormalizeMelodic } from "./normalize.ts";
+// export { scoreNormalizeMelodic } from "./normalize.ts";
 export { scoreNoteDiversity } from "./enthropy.ts";
 import { Note } from "../notes/index.ts";
 
@@ -35,4 +35,11 @@ export interface ScoringsFunctionArgs {
 
 export type score = number | null;
 
-export type ScoringsFunction = (args: ScoringsFunctionArgs) => score;
+export interface ScoreInfo {
+	name: string,
+	value: string
+}
+
+export interface FuncScore {score: score, info: ScoreInfo[]}
+
+export type ScoringsFunction = (args: ScoringsFunctionArgs) => FuncScore | null;

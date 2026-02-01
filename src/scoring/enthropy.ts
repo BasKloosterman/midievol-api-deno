@@ -75,9 +75,9 @@ export const scoreNoteDiversity: ScoringsFunction = (
 		return null;
 	}
 
-	return calculateNoteLengthDiversity(
+	return {score: calculateNoteLengthDiversity(
 		melody.map((n) => n.length),
 		params[0].value,
 		params[1].value,
-	);
+	), info: []};
 };

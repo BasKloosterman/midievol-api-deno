@@ -85,14 +85,16 @@ export const scoreGridness16th: ScoringsFunction = ({
 	const enabled = getEnabledGrids(enabledParam);
 
 	let bestScore: number | null = null;
+	let bestMode : GridId = "16";
 
 	for (const grid of enabled) {
 		const mod = GRID_MOD[grid];
 		const s = gridScore(melody, mod, optimum);
 		if (bestScore === null || s > bestScore) {
 			bestScore = s;
+			bestMode = grid
 		}
 	}
 
-	return bestScore;
+	return {score: bestScore, info: [{name: "type", value: bestMode}]};
 };

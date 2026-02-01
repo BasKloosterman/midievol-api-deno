@@ -1,5 +1,5 @@
 import { framesPerQNote, Note } from "../notes/index.ts";
-import { score, ScoringsFunction, ScoringsFunctionArgs } from "./index.ts";
+import { FuncScore, score, ScoreInfo, ScoringsFunction, ScoringsFunctionArgs } from "./index.ts";
 
 export function scoreValue(
 	optimalValue: number,
@@ -230,7 +230,7 @@ export function limitMelody(
 }
 
 // applySplitVoices checks if different voices should be scored seperately or as one melody
-export function applySplitVoices(scoreFn: ScoringsFunction, args: ScoringsFunctionArgs) : score {
+export function applySplitVoices(scoreFn: ScoringsFunction, args: ScoringsFunctionArgs) : FuncScore | null {
 	if (!args.splitVoices) {
 		return scoreFn(args)
 	}
@@ -249,9 +249,14 @@ export function applySplitVoices(scoreFn: ScoringsFunction, args: ScoringsFuncti
 			})
 			return voiceScore
 		})
-		.reduce((acc, cur) => acc! + cur!, 0)
+		.reduce((acc, cur) => {
+			if (cur == null) {
+				return acc
+			}
+			return {score: acc!.score! + cur.score!, info: [...acc!.info, ...cur.info]}
+		}, {score: 0, info: []})
 
-	const avgScore = (result && result / args.voices.filter(x => x).length) || 0
+	result!.score = (result!.score && result!.score / args.voices.filter(x => x).length) || 0
 
-	return avgScore
+	return result
 }

@@ -2,13 +2,13 @@
 
 
 import { Note, qNote } from "./src/notes/index.ts";
-import { Param, score, ScoringsFunction } from "./src/scoring/index.ts";
+import { FuncScore, Param, score, ScoreInfo, ScoringsFunction } from "./src/scoring/index.ts";
 import { applySplitVoices, calcTotalLen } from "./src/scoring/util.ts";
 import { sumBy } from "./util.ts";
 export interface ScoringDefinition {
 	fn: ScoringsFunction;
 	weight: number;
-	normalizationFn: (scores: score[], debug?: boolean) => score[];
+	normalizationFn: (scores: (FuncScore | null)[], debug?: boolean) => (FuncScore | null)[];
 	// Indicates that the score is normalized between -1 and 1
 	hasNormalizedScore: boolean;
 	params: Param[];
@@ -32,7 +32,7 @@ export function randAdd(
 }
 
 export function normalizeChildren(
-	children: { melody: Note[]; scores: score[] }[],
+	children: { melody: Note[]; scores: (FuncScore | null)[] }[],
 	scoreFuncs: ScoringDefinition[],
 ) {
 	const scoresByFunc = children.map((child) => child.scores);
@@ -40,7 +40,7 @@ export function normalizeChildren(
 		scoresByFunc.map((row) => row[i])
 	);
 
-	const normalizedScoresByFunc = transposed.map((s: score[], idx: number) =>
+	const normalizedScoresByFunc = transposed.map((s: (FuncScore | null)[], idx: number) =>
 		scoreFuncs[idx].normalizationFn(s)
 	);
 
@@ -50,8 +50,8 @@ export function normalizeChildren(
 
 	const newChildren: {
 		melody: Note[];
-		scores: score[];
-		normalizedScores: score[];
+		scores: (FuncScore | null)[];
+		normalizedScores: (FuncScore | null)[];
 	}[] = children.map((child, idx) => {
 		return { ...child, normalizedScores: normalizedScoresByChild[idx] };
 	});
@@ -362,7 +362,7 @@ function reverseNotes(melody: Note[], mutSize: mutSize) {
 }
 
 export function combineScores(
-	scores: score[],
+	scores: (FuncScore | null)[],
 	scoreDefs: ScoringDefinition[],
 ): number {
 	const total = sumBy(scoreDefs, (s) => Math.abs(s.weight));
@@ -372,7 +372,7 @@ export function combineScores(
 
 	const result = scores
 		.reduce((sum : number, score, idx) => {
-			if (score === null) {
+			if (score === null || score.score === null) {
 				return sum;
 			}
 
@@ -382,7 +382,7 @@ export function combineScores(
 				return sum;
 			}
 			
-			const adjusted = weight < 0 ? 2 - (1 + score) : 1 + score;
+			const adjusted = weight < 0 ? 2 - (1 + score.score) : 1 + score.score;
 
 			return sum + adjusted * (Math.abs(weight) / total);
 		}, 0);
@@ -402,11 +402,11 @@ export function evo(
 	}
 
 	let nMelody = melody;
-	let nScoreList: score[] = [];
+	let nScoreList: (FuncScore | null)[] = [];
 	let nScore: score = 0;
 
 	for (let gen = 0; gen < nGens; gen++) {
-		const children: { melody: Note[]; scores: score[] }[] = [];
+		const children: { melody: Note[]; scores: (FuncScore | null)[] }[] = [];
 		// First add self to compare to original later
 		const scores = scoreDefs.map((def) =>
 			def.weight !== 0
@@ -440,7 +440,8 @@ export function evo(
 			}
 
 			if (macroMut.spawnNote) {
-				evolved.push(spawnNote(calcTotalLen(evolved) + 1 * qNote));
+				spawnNote(calcTotalLen(evolved) + 1 * qNote)
+				evolved.push();
 			}
 
 			evolved = evoChild(evolved.concat(nMelody), mutSize);

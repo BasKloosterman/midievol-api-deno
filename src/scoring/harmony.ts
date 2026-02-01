@@ -17,7 +17,7 @@ export const scoreMaj7: ScoringsFunction = (
 		return null;
 	}
 	const measures = divideInMeasures(melody).filter((m) => m.length > 1);
-	if (measures.length === 0) return -1000;
+	if (measures.length === 0) return {score: -1000, info: []};
 
 	const total = measures.reduce((sum, measure) => {
 		const root = measure[0];
@@ -31,7 +31,7 @@ export const scoreMaj7: ScoringsFunction = (
 		return sum + distances / (measure.length - 1);
 	}, 0);
 
-	return -(total / measures.length);
+	return {score: -(total / measures.length), info: []};
 };
 
 function getSimultaneousNoteSets(notes: Note[]): Note[][] {
@@ -64,7 +64,7 @@ export const scoreSimultaneousIntervals: ScoringsFunction = (
 ) => {
 	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null;
+		return {score: null, info: []};
 	}
 	const sets = getSimultaneousNoteSets(melody);
 	const normalizedSets = sets.map((set) =>
@@ -72,7 +72,7 @@ export const scoreSimultaneousIntervals: ScoringsFunction = (
 	);
 
 	if (normalizedSets.length === 0) {
-		return 0;
+		return {score: 0, info: []};
 	}
 
 	const targetIntervals = [intervalIdx.get(THIRD.toString())];
@@ -83,7 +83,7 @@ export const scoreSimultaneousIntervals: ScoringsFunction = (
 		(containing.reduce((sum, val) => sum + val, 0) /
 				normalizedSets.length) * 2;
 
-	return score;
+	return {score, info: []};
 };
 
 const majorScale = [0, 2, 4, 5, 7, 9, 11];
@@ -115,7 +115,7 @@ export const scoreInKey: ScoringsFunction = (
 		return Math.max(max, perc);
 	}, 0);
 
-	return maxScore * 2 - 1;
+	return {score: maxScore * 2 - 1, info: []};
 };
 
 const allowedChords: Record<string, Set<number>> = {
@@ -170,5 +170,5 @@ export const scoreMeasureForChord: ScoringsFunction = (
 		? scores.reduce((a, b) => a + b, 0) / scores.length
 		: 0;
 
-	return score;
+	return {score, info: []};
 };
