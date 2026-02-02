@@ -78,8 +78,7 @@ export const scoreGridness16th: ScoringsFunction = ({
 	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) return null;
 
-	const optimumParam = params.length > 0 ? params[0].value : 0.5;
-	const optimum = optimumParam || 1;
+	const optimum = params.length > 0 ? params[0].value : 0.5;
 
 	const enabledParam = params[1];
 	const enabled = getEnabledGrids(enabledParam);
