@@ -514,9 +514,11 @@ export function evo(
 
 		const bestChild = maxScoredChildren[idx];
 
-		nMelody = bestChild.melody;
-		nScoreList = bestChild.scores;
-		nScore = bestChild.combinedScore;
+		if (bestChild) {
+			nMelody = bestChild.melody;
+			nScoreList = bestChild.scores;
+			nScore = bestChild.combinedScore;
+		}
 	}
 
 	return { melody: nMelody, scores: nScoreList, score: nScore };
