@@ -17,7 +17,7 @@ export { scoreTonality } from "./tonality.ts";
 export { scoreNoteDiversity } from "./enthropy.ts";
 import { Note } from "../notes/index.ts";
 
-export type ParamType = "note" | "float" | "int";
+export type ParamType = "note" | "float" | "int" | "bool";
 export interface Param {
 	name: string;
 	value: number;

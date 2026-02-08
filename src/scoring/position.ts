@@ -489,42 +489,54 @@ export const scoreGrowthDensity: ScoringsFunction = ({
 	// Bass
 	if (voices[0]) {
 		const bass = limitMelody(melody, voiceSplits, [true, false, false]);
-		scores.push(
-			_scoreEvenDensity({
-			// _scoreAbsoluteDensity({
-				melody: bass,
-				density: params[0].value,
-				totalDuration,
-			}),
-		);
+
+		const bassScore = params[3].value ? _scoreEvenDensity({
+			melody: bass,
+			density: params[0].value,
+			totalDuration,
+		}) : _scoreAbsoluteDensity({
+			melody: bass,
+			density: params[0].value,
+			totalDuration,
+		}); 
+
+		scores.push(bassScore);
 		// console.log('low', params[0].value,  bass.length, scores.at(-1))
 	}
 
 	// Mid
 	if (voices[1]) {
 		const mid = limitMelody(melody, voiceSplits, [false, true, false]);
-		scores.push(
-			_scoreEvenDensity({
-			// _scoreAbsoluteDensity({
-				melody: mid,
-				density: params[1].value,
-				totalDuration,
-			}),
-		);
+
+		const midScore = params[3].value ? _scoreEvenDensity({
+			melody: mid,
+			density: params[1].value,
+			totalDuration,
+		}) : _scoreAbsoluteDensity({
+			melody: mid,
+			density: params[1].value,
+			totalDuration,
+		}); 
+
+		scores.push(midScore);
 		// console.log('mid', params[1].value,  mid.length, scores.at(-1))
 	}
 
 	// High
 	if (voices[2]) {
 		const high = limitMelody(melody, voiceSplits, [false, false, true]);
-		scores.push(
-			_scoreEvenDensity({
-			// _scoreAbsoluteDensity({
-				melody: high,
-				density: params[2].value,
-				totalDuration,
-			}),
-		);
+
+		const highScore = params[3].value ? _scoreEvenDensity({
+			melody: high,
+			density: params[2].value,
+			totalDuration,
+		}) : _scoreAbsoluteDensity({
+			melody: high,
+			density: params[2].value,
+			totalDuration,
+		}); 
+
+		scores.push(highScore);
 		// console.log('high', params[2].value,  high.length, scores.at(-1))
 	}
 

@@ -228,6 +228,11 @@ export const scoringFunctions: ScoringDefinition[] = [
 			range: [0, 8],
 			value: 0.5,
 			type: "float",
+		}, {
+			name: "Distribute even",
+			range: [0, 1],
+			value: 0,
+			type: "bool",
 		}],
 		voices: [true, true, true],
 		splitVoices: false,
