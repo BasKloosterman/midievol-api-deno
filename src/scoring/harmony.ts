@@ -6,8 +6,9 @@ import {
 	normalizeIntervals,
 	THIRD,
 } from "./util.ts";
-import { ScoringsFunction } from "./index.ts";
+import { Param, ScoringsFunction } from "./index.ts";
 import { limitMelody } from "./util.ts";
+import { CHORD_CATEGORIES, mapParamToChordCategories } from "./chords.ts";
 
 export const scoreMaj7: ScoringsFunction = (
 	{ melody, voiceSplits, voices },
@@ -118,12 +119,17 @@ export const scoreInKey: ScoringsFunction = (
 	return {score: maxScore * 2 - 1, info: []};
 };
 
-const allowedChords: Record<string, Set<number>> = {
-	majorTriad: new Set([0, 4, 7]),
-	minorTriad: new Set([0, 3, 7]),
-	dominant: new Set([0, 5, 7, 10]),
-	minorSeveth: new Set([0, 3, 7, 10]),
-};
+// const allowedChords: Record<string, Set<number>> = {
+// 	majorTriad: new Set([0, 4, 7]),
+// 	minorTriad: new Set([0, 3, 7]),
+// 	dominant: new Set([0, 5, 7, 10]),
+// 	minorSeveth: new Set([0, 3, 7, 10]),
+// };
+
+const buildAllowedChords = (param: Param) : Set<number>[] => {
+	const cats  = mapParamToChordCategories(param);
+	return cats.reduce((acc, cur) => [...acc, ...(Object.values(CHORD_CATEGORIES[cur].chords))],  [] as Set<number>[])
+}
 
 export const scoreMeasureForChord: ScoringsFunction = (
 	{ melody, params, voiceSplits, voices },
@@ -132,6 +138,8 @@ export const scoreMeasureForChord: ScoringsFunction = (
 	if (melody.length === 0) {
 		return null;
 	}
+
+	const allowedChords = buildAllowedChords(params[0])
 
 	const bars = getMeasures(melody);
 
