@@ -24,7 +24,7 @@ import { Context } from "jsr:@oak/oak/context";
 import { limitMelody } from "./src/scoring/util.ts";
 import { scoreNoteCount } from "./src/scoring/normalize.ts";
 import { scoreNoteDiversity } from "./src/scoring/enthropy.ts";
-import { scoreOverlap } from "./src/scoring/position.ts";
+import { scoreNoteDistribution, scoreOverlap } from "./src/scoring/position.ts";
 
 // function normalizeMinInfToZero(scores: (FuncScore | null)[], debug = false): score[] {
 // 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
@@ -228,15 +228,25 @@ export const scoringFunctions: ScoringDefinition[] = [
 			range: [0, 8],
 			value: 0.5,
 			type: "float",
-		}, {
-			name: "Distribute even",
-			range: [0, 1],
-			value: 0,
-			type: "bool",
 		}],
 		voices: [true, true, true],
 		splitVoices: false,
 		scoreRange: [null, 0],
+	}, {
+		fn: scoreNoteDistribution,
+		weight: 0,
+		normalizationFn: (x) => x,
+		hasNormalizedScore: false,
+		params: [{
+			name: "optimum",
+			range: [-1, 1],
+			value: 1,
+			type: "float",
+		}],
+		voices: [true, true, true],
+		splitVoices: false,
+		scoreRange: [-1, 1],
+		
 	}
 ];
 

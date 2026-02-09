@@ -3,145 +3,141 @@ import { calcTotalLen, limitMelody } from "./util.ts";
 import { score, ScoringsFunction } from "./index.ts";
 import { calcNoteDists } from "./util.ts";
 
-
 const eighthNote = qNote / 2;
 
 function calcPenalty(lengths: [number, number]): number {
-	const dist = lengths[1] - lengths[0];
-	return dist >= eighthNote ? 1 - dist * (1 / eighthNote) : 0;
+  const dist = lengths[1] - lengths[0];
+  return dist >= eighthNote ? 1 - dist * (1 / eighthNote) : 0;
 }
 
 function average<T>(items: T[], mapFn: (item: T) => number): number {
-	if (items.length === 0) return 0;
-	return items.map(mapFn).reduce((sum, val) => sum + val, 0) / items.length;
+  if (items.length === 0) return 0;
+  return items.map(mapFn).reduce((sum, val) => sum + val, 0) / items.length;
 }
 
 function calculateSegmentDensities(
-	notes: Note[],
-	totalDuration: number,
-	targetDensity: number,
-	numSegments: number,
+  notes: Note[],
+  totalDuration: number,
+  targetDensity: number,
+  numSegments: number
 ): number {
-	const segmentDuration = totalDuration / numSegments;
-	const qPerSegment = Math.max(1, segmentDuration / 600);
+  const segmentDuration = totalDuration / numSegments;
+  const qPerSegment = Math.max(1, segmentDuration / 600);
 
-	const densityScores = Array.from({ length: numSegments }, (_, i) => {
-		const start = i * segmentDuration;
-		const end = (i + 1) * segmentDuration;
-		const count = notes.filter((note) =>
-			note.position >= start && note.position < end
-		).length;
-		const density = count / qPerSegment;
-		return -Math.abs(density - targetDensity);
-	});
+  const densityScores = Array.from({ length: numSegments }, (_, i) => {
+    const start = i * segmentDuration;
+    const end = (i + 1) * segmentDuration;
+    const count = notes.filter(
+      (note) => note.position >= start && note.position < end
+    ).length;
+    const density = count / qPerSegment;
+    return -Math.abs(density - targetDensity);
+  });
 
-	return average(densityScores, (s) => s);
+  return average(densityScores, (s) => s);
 }
 
 export const scoreAvgNoteDist: ScoringsFunction = ({
-	melody,
-	voiceSplits,
-	voices,
+  melody,
+  voiceSplits,
+  voices,
 }) => {
-	melody = limitMelody(melody, voiceSplits, voices);
-	if (melody.length === 0) {
-		return null;
-	}
-	const lengthPairs = melody.slice(0, -1).map((note, i) =>
-		[note.length, melody[i + 1].length] as [number, number]
-	);
-	const avgPenalty = average(lengthPairs, calcPenalty);
-	return {score: 1 - (avgPenalty * 2) / eighthNote, info: []};
+  melody = limitMelody(melody, voiceSplits, voices);
+  if (melody.length === 0) {
+    return null;
+  }
+  const lengthPairs = melody
+    .slice(0, -1)
+    .map((note, i) => [note.length, melody[i + 1].length] as [number, number]);
+  const avgPenalty = average(lengthPairs, calcPenalty);
+  return { score: 1 - (avgPenalty * 2) / eighthNote, info: [] };
 };
 
 export const scoreTotalDist: ScoringsFunction = ({
-	melody,
-	voiceSplits,
-	voices,
+  melody,
+  voiceSplits,
+  voices,
 }) => {
-	melody = limitMelody(melody, voiceSplits, voices);
-	if (melody.length === 0) {
-		return null;
-	}
-	return {score: calcTotalLen(melody), info: []};
+  melody = limitMelody(melody, voiceSplits, voices);
+  if (melody.length === 0) {
+    return null;
+  }
+  return { score: calcTotalLen(melody), info: [] };
 };
 
 export const scoreNormalizedDistanceForMelody: ScoringsFunction = ({
-	melody,
-	voiceSplits,
-	voices,
+  melody,
+  voiceSplits,
+  voices,
 }) => {
-	melody = limitMelody(melody, voiceSplits, voices);
-	if (melody.length === 0) {
-		return null;
-	}
-	const dists = calcNoteDists(melody);
-	const sixteenthNote = framesPerQNote / 4;
-	const halfNote = framesPerQNote * 2;
+  melody = limitMelody(melody, voiceSplits, voices);
+  if (melody.length === 0) {
+    return null;
+  }
+  const dists = calcNoteDists(melody);
+  const sixteenthNote = framesPerQNote / 4;
+  const halfNote = framesPerQNote * 2;
 
-	const score = dists.reduce((acc, d) => {
-		if (d < sixteenthNote) {
-			return acc + (1 - (sixteenthNote - d) / sixteenthNote);
-		} else if (d > halfNote) {
-			return acc + (1 - Math.min((d - halfNote) / halfNote, 1));
-		}
-		return acc + 1;
-	}, 0);
+  const score = dists.reduce((acc, d) => {
+    if (d < sixteenthNote) {
+      return acc + (1 - (sixteenthNote - d) / sixteenthNote);
+    } else if (d > halfNote) {
+      return acc + (1 - Math.min((d - halfNote) / halfNote, 1));
+    }
+    return acc + 1;
+  }, 0);
 
-	return {score: ((score / melody.length) * 2) - 1, info: []};
+  return { score: (score / melody.length) * 2 - 1, info: [] };
 };
 
 // scoreOverlap award point for notes that overlap, the more notes overlap with
 // at the same time the higher the score.
 
 export const _scoreOverlap = ({
-	melody,
-	optimum
-	
-} : {melody: Note[], optimum: number}) => {
+  melody,
+  optimum,
+}: {
+  melody: Note[];
+  optimum: number;
+}) => {
+  if (melody.length < 2) {
+    return 1 - optimum;
+  }
 
-	if (melody.length < 2) {
-		return 1 - optimum
-	}
+  optimum = Math.round(optimum);
+  const overlapsPerNote: number[] = melody.map((x) => 0);
 
-	optimum = Math.round(optimum)
-	const overlapsPerNote : number[] = melody.map(x => 0)
-	
-	for (const [idx, curNote] of melody.slice(0, melody.length - 1).entries()) {
+  for (const [idx, curNote] of melody.slice(0, melody.length - 1).entries()) {
+    const overlappingPitches: number[] = [];
+    const pitch = Math.round(curNote.pitch / 10);
 
-		const overlappingPitches : number[] = []
-		const pitch = Math.round(curNote.pitch / 10)
+    const start = curNote.position;
+    const end = curNote.position + curNote.length;
 
-		const start = curNote.position
-		const end = curNote.position + curNote.length
+    for (const [innerIdx, otherNote] of melody.slice(idx + 1).entries()) {
+      const otherNoteIdx = idx + (innerIdx + 1);
 
-		for (const [innerIdx, otherNote] of melody.slice(idx + 1).entries()) {
-			const otherNoteIdx = idx + (innerIdx + 1) 
-			
-			const overlappingPitch = Math.round(otherNote.pitch / 10)
+      const overlappingPitch = Math.round(otherNote.pitch / 10);
 
-			if (
-				otherNote.position >= start
-				&&
-				otherNote.position <= end
-				&&
-				pitch != overlappingPitch
-				&&
-				!overlappingPitches.includes(overlappingPitch)
-			) {
-				overlappingPitches.push(overlappingPitch)
-				overlapsPerNote[idx] += 1
-				overlapsPerNote[otherNoteIdx] += 1
-			}
-		}
-	}
+      if (
+        otherNote.position >= start &&
+        otherNote.position <= end &&
+        pitch != overlappingPitch &&
+        !overlappingPitches.includes(overlappingPitch)
+      ) {
+        overlappingPitches.push(overlappingPitch);
+        overlapsPerNote[idx] += 1;
+        overlapsPerNote[otherNoteIdx] += 1;
+      }
+    }
+  }
 
-	const penalty = overlapsPerNote.reduce(
-		(acc, val) => acc + Math.abs(val - optimum),
-		0
-	)
+  const penalty = overlapsPerNote.reduce(
+    (acc, val) => acc + Math.abs(val - optimum),
+    0
+  );
 
-	return 1 - (penalty / melody.length)
+  return 1 - penalty / melody.length;
 };
 
 // export const _scoreOverlap = ({
@@ -153,13 +149,13 @@ export const _scoreOverlap = ({
 //   }) => {
 // 	const n = melody.length;
 // 	if (n < 2) return 1 - optimum;
-  
+
 // 	optimum = Math.round(optimum);
-  
+
 // 	// Ensure time order (your pipeline often sorts already, but this makes it safe)
 // 	// If you're 100% sure melody is sorted, you can remove this for extra speed.
 // 	// const notes = melody.slice().sort((a, b) => a.position - b.position);
-  
+
 // 	// Precompute pitch buckets and end times
 // 	const pitchBucket = new Int16Array(n);
 // 	const endTime = new Int32Array(n);
@@ -167,16 +163,16 @@ export const _scoreOverlap = ({
 // 	  pitchBucket[i] = Math.round(melody[i].pitch / 10);
 // 	  endTime[i] = melody[i].position + melody[i].length;
 // 	}
-  
+
 // 	// Overlaps counted per note (in the sorted 'notes' order)
 // 	const overlapsPerNote = new Int16Array(n);
-  
+
 // 	// Bitset per note: tracks which pitch buckets have already been counted as overlaps.
 // 	// Buckets are ~0..84 with your maxReach=840 => 85 buckets, so 3x 32-bit = 96 bits is enough.
 // 	const mask0 = new Uint32Array(n);
 // 	const mask1 = new Uint32Array(n);
 // 	const mask2 = new Uint32Array(n);
-  
+
 // 	function hasBit(i: number, b: number): boolean {
 // 	  if (b < 0) return false;
 // 	  if (b < 32) return ((mask0[i] >>> b) & 1) !== 0;
@@ -184,21 +180,21 @@ export const _scoreOverlap = ({
 // 	  if (b < 96) return ((mask2[i] >>> (b - 64)) & 1) !== 0;
 // 	  return true; // out of range: treat as already seen
 // 	}
-  
+
 // 	function setBit(i: number, b: number): void {
 // 	  if (b < 0) return;
 // 	  if (b < 32) mask0[i] |= 1 << b;
 // 	  else if (b < 64) mask1[i] |= 1 << (b - 32);
 // 	  else if (b < 96) mask2[i] |= 1 << (b - 64);
 // 	}
-  
+
 // 	// Active notes are indices into 'notes' that overlap current time
 // 	let active: number[] = [];
-  
+
 // 	for (let cur = 0; cur < n; cur++) {
 // 	  const curStart = melody[cur].position;
 // 	  const curPitch = pitchBucket[cur];
-  
+
 // 	  // Drop notes that have ended
 // 	  if (active.length) {
 // 		const nextActive: number[] = [];
@@ -208,93 +204,94 @@ export const _scoreOverlap = ({
 // 		}
 // 		active = nextActive;
 // 	  }
-  
+
 // 	  // Compare current note to active notes (these are the only possible overlaps)
 // 	  for (let k = 0; k < active.length; k++) {
 // 		const prev = active[k];
-  
+
 // 		// Pitch bucket must differ (same rule as your original)
 // 		if (pitchBucket[prev] === curPitch) continue;
-  
+
 // 		// This matches your "unique per prev-note" behavior:
 // 		// if prev already counted an overlap with this pitch bucket, skip.
 // 		if (hasBit(prev, curPitch)) continue;
-  
+
 // 		setBit(prev, curPitch);
 // 		overlapsPerNote[prev] += 1;
 // 		overlapsPerNote[cur] += 1;
 // 	  }
-  
+
 // 	  // Current note becomes active for future notes
 // 	  active.push(cur);
 // 	}
-  
+
 // 	// Penalty and final score
 // 	let penalty = 0;
 // 	for (let i = 0; i < n; i++) {
 // 	  penalty += Math.abs(overlapsPerNote[i] - optimum);
 // 	}
-  
+
 // 	return 1 - penalty / n;
 //   };
-  
 
 export const scoreOverlap: ScoringsFunction = ({
-	melody,
-	voiceSplits,
-	voices,
-	params,
+  melody,
+  voiceSplits,
+  voices,
+  params,
 }) => {
-	const scores: score[] = [];
+  const scores: score[] = [];
 
-	// Bass
-	if (voices[0]) {
-		const evolvedMelody = limitMelody(melody, voiceSplits, [
-			true,
-			false,
-			false,
-		]);
-		scores.push(
-			_scoreOverlap({
-				melody: evolvedMelody,
-				optimum: params[0].value,
-			}),
-		);
-	}
+  // Bass
+  if (voices[0]) {
+    const evolvedMelody = limitMelody(melody, voiceSplits, [
+      true,
+      false,
+      false,
+    ]);
+    scores.push(
+      _scoreOverlap({
+        melody: evolvedMelody,
+        optimum: params[0].value,
+      })
+    );
+  }
 
-	// Mid
-	if (voices[1]) {
-		const evolvedMelody = limitMelody(melody, voiceSplits, [
-			false,
-			true,
-			false,
-		]);
-		scores.push(
-			_scoreOverlap({
-				melody: evolvedMelody,
-				optimum: params[1].value,
-			}),
-		);
-	}
+  // Mid
+  if (voices[1]) {
+    const evolvedMelody = limitMelody(melody, voiceSplits, [
+      false,
+      true,
+      false,
+    ]);
+    scores.push(
+      _scoreOverlap({
+        melody: evolvedMelody,
+        optimum: params[1].value,
+      })
+    );
+  }
 
-	// High
-	if (voices[2]) {
-		const evolvedMelody = limitMelody(melody, voiceSplits, [
-			false,
-			false,
-			true,
-		]);
-		scores.push(
-			_scoreOverlap({
-				melody: evolvedMelody,
-				optimum: params[2].value,
-			}),
-		);
-	}
+  // High
+  if (voices[2]) {
+    const evolvedMelody = limitMelody(melody, voiceSplits, [
+      false,
+      false,
+      true,
+    ]);
+    scores.push(
+      _scoreOverlap({
+        melody: evolvedMelody,
+        optimum: params[2].value,
+      })
+    );
+  }
 
-	return {score: scores.reduce((acc, cur) => acc! + cur!, 0)! / scores.length, info: []};
+  return {
+    score: scores.reduce((acc, cur) => acc! + cur!, 0)! / scores.length,
+    info: [],
+  };
 };
-
 
 /* OLD density */
 
@@ -321,9 +318,6 @@ export const scoreOverlap: ScoringsFunction = ({
 // 		Math.max(numSegments, 1),
 // 	);
 // };
-
-
-
 
 // export const scoreGrowthDensity: ScoringsFunction = ({
 // 	melody,
@@ -388,167 +382,231 @@ export const scoreOverlap: ScoringsFunction = ({
 // 	return scores.reduce((acc, cur) => acc + cur) / scores.length;
 // };
 
-
 /* NEW density */
 
 export const _scoreEvenDensity = ({
-	melody,
-	density,
-	totalDuration,
+  melody,
+  density,
+  totalDuration,
 }: {
-	melody: Note[];
-	density: number;
-	totalDuration: number;
+  melody: Note[];
+  density: number;
+  totalDuration: number;
 }) => {
-	const totalQuarterNotes = Math.round(
-		totalDuration / framesPerQNote
-	);
+  const totalQuarterNotes = Math.round(totalDuration / framesPerQNote);
 
-	const expectedPerQN = density;
+  const expectedPerQN = density;
 
-	// Tolerance = allowed deviation per quarter note
-	const tolerance =
-		density === 0
-			? 0.25            // very strict for silence
-			: Math.max(0.5, expectedPerQN * 0.5);
+  // Tolerance = allowed deviation per quarter note
+  const tolerance =
+    density === 0
+      ? 0.25 // very strict for silence
+      : Math.max(0.5, expectedPerQN * 0.5);
 
-	const bins = new Array(totalQuarterNotes).fill(0);
+  const bins = new Array(totalQuarterNotes).fill(0);
 
-	for (const note of melody) {
-		const qIndex = Math.floor(note.position / framesPerQNote);
-		if (qIndex >= 0 && qIndex < bins.length) {
-			bins[qIndex]++;
-		}
-	}
+  for (const note of melody) {
+    const qIndex = Math.floor(note.position / framesPerQNote);
+    if (qIndex >= 0 && qIndex < bins.length) {
+      bins[qIndex]++;
+    }
+  }
 
-	let errorSum = 0;
-	for (const count of bins) {
-		const normalizedDiff = (count - expectedPerQN) / tolerance;
-		errorSum += normalizedDiff * normalizedDiff;
-	}
+  let errorSum = 0;
+  for (const count of bins) {
+    const normalizedDiff = (count - expectedPerQN) / tolerance;
+    errorSum += normalizedDiff * normalizedDiff;
+  }
 
-	const mse = errorSum / bins.length;
+  const mse = errorSum / bins.length;
 
-	// Convert error → score (0..1)
-	return Math.exp(-mse);
+  // Convert error → score (0..1)
+  return Math.exp(-mse);
 };
 
-
-
 export const _scoreAbsoluteDensity = ({
-	melody,
-	density,
-	totalDuration,
+  melody,
+  density,
+  totalDuration,
 }: {
-	melody: Note[];
-	density: number;
-	totalDuration: number;
+  melody: Note[];
+  density: number;
+  totalDuration: number;
 }) => {
-	const totalQuarterNotes = totalDuration / framesPerQNote;
+  const totalQuarterNotes = totalDuration / framesPerQNote;
 
-	const actualNotes = melody.length;
-	const expectedNotes = density * totalQuarterNotes;
+  const actualNotes = melody.length;
+  const expectedNotes = density * totalQuarterNotes;
 
-	// How tolerant you want to be (in notes)
-	// Smaller = stricter
-	const tolerance = Math.max(1, expectedNotes * 0.25);
+  // How tolerant you want to be (in notes)
+  // Smaller = stricter
+  const tolerance = Math.max(1, expectedNotes * 0.25);
 
-	const error = actualNotes - expectedNotes;
+  const error = actualNotes - expectedNotes;
 
-	// Gaussian falloff (range ~0..1)
-	const score = Math.exp(-(error * error) / (2 * tolerance * tolerance));
+  // Gaussian falloff (range ~0..1)
+  const score = Math.exp(-(error * error) / (2 * tolerance * tolerance));
 
-	return score;
+  return score;
 };
 
 const aggregatePowerMean = (scores: number[], p = -0.5) => {
-	if (!scores.length) return 0;
-	const eps = 1e-9;
-	const xs = scores.map((s) => Math.max(eps, s));
+  if (!scores.length) return 0;
+  const eps = 1e-9;
+  const xs = scores.map((s) => Math.max(eps, s));
 
-	if (Math.abs(p) < 1e-9) {
-		// geometric mean
-		const avgLog = xs.reduce((a, x) => a + Math.log(x), 0) / xs.length;
-		return Math.exp(avgLog);
-	}
+  if (Math.abs(p) < 1e-9) {
+    // geometric mean
+    const avgLog = xs.reduce((a, x) => a + Math.log(x), 0) / xs.length;
+    return Math.exp(avgLog);
+  }
 
-	const avgPow = xs.reduce((a, x) => a + Math.pow(x, p), 0) / xs.length;
-	return Math.pow(avgPow, 1 / p);
+  const avgPow = xs.reduce((a, x) => a + Math.pow(x, p), 0) / xs.length;
+  return Math.pow(avgPow, 1 / p);
 };
 
-
 export const scoreGrowthDensity: ScoringsFunction = ({
-	melody,
-	voiceSplits,
-	voices,
-	params,
+  melody,
+  voiceSplits,
+  voices,
+  params,
 }) => {
-	const scores: number[] = [];
-	const totalDuration = calcTotalLen(melody);
+  const scores: number[] = [];
+  const totalDuration = calcTotalLen(melody);
 
-	// Bass
-	if (voices[0]) {
-		const bass = limitMelody(melody, voiceSplits, [true, false, false]);
+  // Bass
+  if (voices[0]) {
+    const bass = limitMelody(melody, voiceSplits, [true, false, false]);
 
-		const bassScore = params[3].value ? _scoreEvenDensity({
-			melody: bass,
-			density: params[0].value,
-			totalDuration,
-		}) : _scoreAbsoluteDensity({
-			melody: bass,
-			density: params[0].value,
-			totalDuration,
-		}); 
+    const bassScore = _scoreAbsoluteDensity({
+		melody: bass,
+		density: params[0].value,
+		totalDuration,
+	});
 
-		scores.push(bassScore);
-		// console.log('low', params[0].value,  bass.length, scores.at(-1))
-	}
+    scores.push(bassScore);
+    // console.log('low', params[0].value,  bass.length, scores.at(-1))
+  }
 
-	// Mid
-	if (voices[1]) {
-		const mid = limitMelody(melody, voiceSplits, [false, true, false]);
+  // Mid
+  if (voices[1]) {
+    const mid = limitMelody(melody, voiceSplits, [false, true, false]);
 
-		const midScore = params[3].value ? _scoreEvenDensity({
-			melody: mid,
-			density: params[1].value,
-			totalDuration,
-		}) : _scoreAbsoluteDensity({
-			melody: mid,
-			density: params[1].value,
-			totalDuration,
-		}); 
+    const midScore = _scoreAbsoluteDensity({
+		melody: mid,
+		density: params[1].value,
+		totalDuration,
+	});
 
-		scores.push(midScore);
-		// console.log('mid', params[1].value,  mid.length, scores.at(-1))
-	}
+    scores.push(midScore);
+    // console.log('mid', params[1].value,  mid.length, scores.at(-1))
+  }
 
-	// High
-	if (voices[2]) {
-		const high = limitMelody(melody, voiceSplits, [false, false, true]);
+  // High
+  if (voices[2]) {
+    const high = limitMelody(melody, voiceSplits, [false, false, true]);
 
-		const highScore = params[3].value ? _scoreEvenDensity({
-			melody: high,
-			density: params[2].value,
-			totalDuration,
-		}) : _scoreAbsoluteDensity({
-			melody: high,
-			density: params[2].value,
-			totalDuration,
-		}); 
+    const highScore = _scoreAbsoluteDensity({
+		melody: high,
+		density: params[2].value,
+		totalDuration,
+	});
 
-		scores.push(highScore);
-		// console.log('high', params[2].value,  high.length, scores.at(-1))
-	}
+    scores.push(highScore);
+    // console.log('high', params[2].value,  high.length, scores.at(-1))
+  }
 
-	return {score: scores.length ? aggregatePowerMean(scores, -0.7) : 0, info: []}; // try -0.5 .. -1.5
+  return {
+    score: scores.length ? aggregatePowerMean(scores, -0.7) : 0,
+    info: [],
+  }; // try -0.5 .. -1.5
 
+  const avgScore = scores.length
+    ? scores.reduce((a, b) => a + b, 0) / scores.length
+    : 0;
 
-	const avgScore = scores.length
-	? scores.reduce((a, b) => a + b, 0) / scores.length
-	: 0;
+  // console.log('avgScore', avgScore)
 
-	// console.log('avgScore', avgScore)
-	
+  return { score: avgScore, info: [] };
+};
 
-	return {score: avgScore, info: []} 
+/**
+ * Computes a raw distribution score in [-1, 1]:
+ *   1  = perfectly even spacing
+ *  -1  = highly clustered spacing
+ */
+export function rawNoteDistributionScore(notes: Note[]): number {
+  if (!notes || notes.length < 3) return 0;
+
+  const onsets = notes
+    .map((n) => n.position)
+    .filter((p) => Number.isFinite(p))
+    .sort((a, b) => a - b);
+
+  if (onsets.length < 3) return 0;
+
+  const iois: number[] = [];
+  for (let i = 1; i < onsets.length; i++) {
+    iois.push(Math.max(0, onsets[i] - onsets[i - 1]));
+  }
+
+  const sum = iois.reduce((acc, v) => acc + v, 0);
+  if (sum === 0) return -1; // all notes at same time => max cluster
+
+  const g = gini(iois); // [0, 1]
+  const raw = 1 - 2 * g; // [1, -1]
+  return clamp(raw, -1, 1);
+}
+
+/**
+ * Fitness based on closeness to an optimum in [-1, 1].
+ * Returns [-1, 1]:
+ *   1  = raw matches optimum exactly
+ *  -1  = raw is maximally far from optimum (distance 2)
+ */
+export function fitnessNoteDistributionTowardOptimum(
+  notes: Note[],
+  optimum: number
+): number {
+  const opt = clamp(optimum, -1, 1);
+  const raw = rawNoteDistributionScore(notes);
+
+  // distance in [0, 2] -> map to [1, -1]
+  const fitness = 1 - Math.abs(raw - opt);
+  return clamp(fitness, -1, 1);
+}
+
+/** Gini coefficient for non-negative values. Returns [0, 1]. */
+function gini(values: number[]): number {
+  const x = values
+    .map((v) => (Number.isFinite(v) ? Math.max(0, v) : 0))
+    .sort((a, b) => a - b);
+
+  const n = x.length;
+  if (n === 0) return 0;
+
+  const total = x.reduce((acc, v) => acc + v, 0);
+  if (total === 0) return 0;
+
+  let weightedSum = 0;
+  for (let i = 0; i < n; i++) {
+    weightedSum += (i + 1) * x[i];
+  }
+
+  const g = (2 * weightedSum) / (n * total) - (n + 1) / n;
+  return clamp(g, 0, 1);
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+export const scoreNoteDistribution: ScoringsFunction = ({
+  melody,
+  params,
+}) => {
+	const optimum = (typeof params[0]?.value == 'number') ? params[0]?.value : 1
+	const score = fitnessNoteDistributionTowardOptimum(melody, optimum);
+
+  return { score, info: [] };
 };
