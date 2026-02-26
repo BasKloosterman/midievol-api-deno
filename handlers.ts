@@ -161,6 +161,11 @@ export const scoringFunctions: ScoringDefinition[] = [
 			range: [0, 64],
 			value: 0,
 			type: "int",
+		}, {
+			name: "Optimum",
+			range: [0, 1],
+			value: 0.8,
+			type: "float",
 		}],
 		voices: [true, true, true],
 		splitVoices: false,

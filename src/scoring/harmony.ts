@@ -133,50 +133,51 @@ const buildAllowedChords = (param: Param) : Set<number>[] => {
 
 export const scoreMeasureForChord: ScoringsFunction = (
 	{ melody, params, voiceSplits, voices },
-) => {
+  ) => {
 	melody = limitMelody(melody, voiceSplits, voices);
 	if (melody.length === 0) {
-		return null;
+	  return null;
 	}
-
-	const allowedChords = buildAllowedChords(params[0])
-
+  
+	const allowedChords = buildAllowedChords(params[0]);
+	const optimum = typeof params[1] === "number" ? params[1] : 0.8;
+  
 	const bars = getMeasures(melody);
-
+  
 	const scores = bars.map((measure) => {
-		const best = measure.reduce((maxScore, note) => {
-			const pitch = Math.round(note.pitch / 10);
-
-			const root = pitch % 12;
-			const normalized = measure.map((n) =>
-				((Math.round(n.pitch / 10) % 12) - root + 12) % 12
-			).sort();
-
-			const total = normalized.length;
-
-			const bestChordScore = Math.max(
-				...Object.values(allowedChords).map((chordSet) => {
-					const matchCount = normalized.filter((p) =>
-						chordSet.has(p)
-					).length;
-
-					
-					const similarity = matchCount / total;
-					return (1 - Math.abs(similarity - 0.8) - 0.2) / (0.8);
-				}),
-			);
-
-			
-
-			return Math.max(maxScore, bestChordScore);
-		}, 0);
-
-		return best;
+	  const best = measure.reduce((maxScore, note) => {
+		const pitch = Math.round(note.pitch / 10);
+  
+		const root = pitch % 12;
+		const normalized = measure
+		  .map((n) => (((Math.round(n.pitch / 10) % 12) - root + 12) % 12))
+		  .sort();
+  
+		const total = normalized.length;
+  
+		const bestChordScore = Math.max(
+		  ...Object.values(allowedChords).map((chordSet) => {
+			const matchCount = normalized.filter((p) => chordSet.has(p)).length;
+  
+			const similarity = matchCount / total;
+  
+			// previously: (1 - Math.abs(similarity - 0.8) - 0.2) / (0.8);
+			// 0.2 was (1 - 0.8), so make it follow optimum too:
+			const penaltyFloor = 1 - optimum;
+  
+			return (1 - Math.abs(similarity - optimum) - penaltyFloor) / optimum;
+		  }),
+		);
+  
+		return Math.max(maxScore, bestChordScore);
+	  }, 0);
+  
+	  return best;
 	});
-
+  
 	const score = scores.length > 0
-		? scores.reduce((a, b) => a + b, 0) / scores.length
-		: 0;
-
-	return {score, info: []};
-};
+	  ? scores.reduce((a, b) => a + b, 0) / scores.length
+	  : 0;
+  
+	return { score, info: [] };
+  };
