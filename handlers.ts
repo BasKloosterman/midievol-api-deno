@@ -26,6 +26,7 @@ import { scoreNoteCount } from "./src/scoring/normalize.ts";
 import { scoreNoteDiversity } from "./src/scoring/enthropy.ts";
 import { scoreNoteDistribution, scoreOverlap } from "./src/scoring/position.ts";
 import { scoreBpm } from "./src/scoring/bpm.ts";
+import { scoreEnergyWaves } from "./src/scoring/energy.ts";
 
 // function normalizeMinInfToZero(scores: (FuncScore | null)[], debug = false): score[] {
 // 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
@@ -263,6 +264,46 @@ export const scoringFunctions: ScoringDefinition[] = [
 		splitVoices: false,
 		scoreRange: [-1, 1],
 		
+	}, {
+		fn: scoreEnergyWaves,
+		weight: 0,
+		hasNormalizedScore: false,
+		voices: [true, true, true],
+		splitVoices: false,
+		scoreRange: [null,1],
+		normalizationFn: normalizeMinOneToOne,
+		params: [
+			{
+				name: "rLow",
+				range: [0,3],
+				value: 0.8,
+				type: 'float'
+			},
+			{
+				name: "rHigh",
+				range: [0,3],
+				value: 1.25,
+				type: 'float'
+			},
+			{
+				name: "beatsPerMeasure",
+				range: [2,8],
+				value: 4,
+				type: 'int'
+			},
+			{
+				name: "stepBeats",
+				range: [0.25,2],
+				value: 1,
+				type: 'int'
+			},
+			{
+				name: "onsetMergeSubdivision",
+				range: [8,128],
+				value: 64,
+				type: 'int'
+			},
+		]	
 	}
 ];
 
@@ -298,6 +339,8 @@ export async function evolveHandler(ctx: Context) {
 	const updatedFuncs = updateFuncWeights(body.modFuncs);
 	const voices = body.voices;
 	const melody = parseDNA(body.dna).sort((a, b) => a.position - b.position);
+
+	console.log('body.children, body.x_gens', body.children, body.x_gens)
 
 	const { melody: evolved, scores: scoresPerFunc, score, bpm } = evo(
 		melody,
