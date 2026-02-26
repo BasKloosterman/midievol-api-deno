@@ -18,7 +18,7 @@ const normLengthMax = framesPerQNote;
 // 	return maxScore * penalty;
 // }
 
-export const scoreNoteCount: ScoringsFunction = (
+export const scoreMusicLength: ScoringsFunction = (
 	{ melody, voiceSplits, voices, params },
 ) => {
 	melody = limitMelody(melody, voiceSplits, voices);
