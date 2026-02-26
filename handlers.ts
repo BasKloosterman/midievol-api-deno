@@ -274,14 +274,14 @@ export const scoringFunctions: ScoringDefinition[] = [
 		normalizationFn: normalizeMinOneToOne,
 		params: [
 			{
-				name: "rLow",
-				range: [0,3],
+				name: "VarLow",
+				range: [0,10],
 				value: 0.8,
 				type: 'float'
 			},
 			{
-				name: "rHigh",
-				range: [0,3],
+				name: "VarHigh",
+				range: [0,10],
 				value: 1.25,
 				type: 'float'
 			},

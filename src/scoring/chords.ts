@@ -45,7 +45,7 @@ export const CHORD_CATEGORIES: Record<
   // ─────────────────────────────────────────
   tonal_core: {
     description:
-      "Herkenbare tonale akkoorden uit pop, rock en folk (majeur, mineur, sus en add).",
+      "Herkenbare tonale akkoorden uit pop, rock en folk (majeur, mineur).",
     chords: {
       major: new Set([0, 4, 7]),
       minor: new Set([0, 3, 7]),

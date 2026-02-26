@@ -12,7 +12,7 @@ import { limitMelody } from './util.ts'
  * - Event = startmoment. Akkoorden tellen als 1 event (met tolerantie).
  * - We kijken NIET naar absolute aantallen, maar naar de verhouding tussen opeenvolgende windows:
  *      r = (E_next + eps) / (E_prev + eps)
- * - Gebruiker stelt een ondergrens (rLow) en bovengrens (rHigh) in.
+ * - Gebruiker stelt een ondergrens (MinVar) en bovengrens (MaxVar) in.
  *   Buiten die band => penalty (spikey / bursts).
  *
  * Slimme uitzondering:
@@ -131,7 +131,7 @@ function computeRatios(energy: number[], eps = 1): number[] {
 }
 
 /**
- * 4) Score de ratio’s met een band [rLow, rHigh].
+ * 4) Score de ratio’s met een band [MinVar, MaxVar].
  *
  * - Binnen band: OK (geen penalty)
  * - Buiten band: penalty op basis van hoe ver erbuiten
@@ -143,22 +143,34 @@ function computeRatios(energy: number[], eps = 1): number[] {
 function scoreRatiosWithBoundaries(
     energy: number[],
     ratios: number[],
-    rLow: number,
-    rHigh: number
+    varMinUser: number,   // 0..10
+    varMaxUser: number,   // 0..10
+    eventsCount: number   // #onset events
 ): { score: number; info: ScoreInfo[] } {
+    const tiny = 1e-6
     let penalty = 0
 
     const transitionsTotal = ratios.length
     let transitionsUsed = 0
     let boundariesSkipped = 0
-    let outsideCount = 0
+    let outside = 0
+
+    // Theoretisch maximum spike gegeven het materiaal:
+    // rMaxPossible = (Emax+1)/(0+1) = Emax+1
+    // EmaxPossible ~ eventsCount
+    const EmaxPossible = Math.max(1, eventsCount)
+    const DmaxPossible = Math.log(EmaxPossible + 1) // |log(r)| max (ongeveer)
+
+    // Map user 0..10 naar echte D-grenzen
+    const MinVar = (Math.max(0, Math.min(10, varMinUser)) / 10) * DmaxPossible
+    const MaxVar = (Math.max(0, Math.min(10, varMaxUser)) / 10) * DmaxPossible
 
     for (let i = 0; i < ratios.length; i++) {
         const eA = energy[i]
         const eB = energy[i + 1]
         const r = ratios[i]
 
-        // Phrase boundary: stilte ↔ inzet (of stilte ↔ stilte)
+        // Phrase boundary (stilte/inzet) overslaan
         if (eA === 0 || eB === 0) {
             boundariesSkipped++
             continue
@@ -166,30 +178,36 @@ function scoreRatiosWithBoundaries(
 
         transitionsUsed++
 
-        if (r < rLow) {
-            // hoe ver onder rLow -> hoe meer penalty
-            penalty += (rLow - r) / rLow
-            outsideCount++
-        } else if (r > rHigh) {
-            // hoe ver boven rHigh -> hoe meer penalty
-            penalty += (r - rHigh) / rHigh
-            outsideCount++
+        const D = Math.abs(Math.log(r))
+        if (!Number.isFinite(D)) continue
+
+        // te vlak (alleen als MinVar > 0)
+        if (MinVar > 0 && D < MinVar) {
+            penalty += (MinVar - D) / (MinVar + tiny)
+            outside++
+        }
+        // te spikey (als MaxVar==0 -> alles behalve D==0 wordt zwaar afgestraft maar niet crashen)
+        else if (D > MaxVar) {
+            penalty += (D - MaxVar) / (MaxVar + tiny)
+            outside++
         }
     }
 
-    // Raw score: hoger is beter. We gebruiken negatieve penalty.
     const rawScore = -penalty
 
-    // info: jullie gebruiken vaak [], maar dit is handig voor debug.
-    const info = [
+    const info: ScoreInfo[] = [
         { name: 'penalty', value: '' + penalty },
         {
             name: 'outsideRate',
-            value: '' + (transitionsUsed > 0 ? outsideCount / transitionsUsed : 0) ,
+            value: '' + (transitionsUsed > 0 ? outside / transitionsUsed : 0),
         },
         { name: 'boundariesSkipped', value: '' + boundariesSkipped },
         { name: 'transitionsTotal', value: '' + transitionsTotal },
         { name: 'transitionsUsed', value: '' + transitionsUsed },
+        { name: 'eventsCount', value: '' + eventsCount },
+        { name: 'DmaxPossible', value: '' + DmaxPossible },
+        { name: 'MinVar', value: '' + MinVar },
+        { name: 'MaxVar', value: '' + MaxVar },
     ]
 
     return { score: rawScore, info }
@@ -208,13 +226,26 @@ export const scoreEnergyWaves: ScoringsFunction = ({
     if (melody.length === 0) return null
 
     // ---- User params ----
-    // 0) rLow  : ondergrens verhouding
-    // 1) rHigh : bovengrens verhouding
+    // 0) minVar  : ondergrens verhouding
+    // 1) maxVar : bovengrens verhouding
     // 2) beatsPerMeasure : maatlengte (default 4)
     // 3) stepBeats       : schuifstap (default 1 beat)
     // 4) onsetMergeSubdivision : "hoe strak is tegelijk?" (default 64 => 1/64 kwartnoot)
-    const rLow = getNumberParam(params, 0, 0.8)
-    const rHigh = getNumberParam(params, 1, 1.25)
+    const minVarUser = getNumberParam(params, 0, 0);   // 0–10
+    const maxVarUser = getNumberParam(params, 1, 10);  // 0–10
+
+    // --- SAFETY CLAMPS ---
+
+    // begrens gebruikersrange
+    let minUser = Math.max(0, Math.min(10, minVarUser));
+    let maxUser = Math.max(0, Math.min(10, maxVarUser));
+
+    // zorg dat Max >= Min (anders onmogelijk gebied)
+    if (maxUser < minUser) {
+    const mid = (maxUser + minUser) * 0.5;
+    minUser = mid;
+    maxUser = mid;
+    }
     const beatsPerMeasure = getNumberParam(params, 2, 4)
     const stepBeats = getNumberParam(params, 3, 1)
     const onsetMergeSubdivision = Math.max(
@@ -267,12 +298,18 @@ export const scoreEnergyWaves: ScoringsFunction = ({
     const ratios = computeRatios(energy, 1)
 
     // ---- Score ----
-    const { score } = scoreRatiosWithBoundaries(energy, ratios, rLow, rHigh)
+const { score } = scoreRatiosWithBoundaries(
+    energy,
+    ratios,
+    minUser,
+    maxUser,
+    events.length
+);
 
     // // Voeg wat handige param-info toe (optioneel)
     // const extraInfo = [
-    //     // { name: "rLow", value: rLow },
-    //     // { name: "rHigh", value: rHigh },
+    //     // { name: "MinVar", value: MinVar },
+    //     // { name: "MaxVar", value: MaxVar },
     //     // { name: "beatsPerMeasure", value: beatsPerMeasure },
     //     // { name: "stepBeats", value: stepBeats },
     //     // { name: "onsetMergeSubdivision", value: onsetMergeSubdivision },
