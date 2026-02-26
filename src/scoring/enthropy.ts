@@ -67,7 +67,7 @@ function calculateNoteLengthDiversity(
 	return ((targetDiversity * score) + ((1 - targetDiversity) * scoreLengthScore)) * 2 - 1;
 }
 
-export const scoreNoteDiversity: ScoringsFunction = (
+export const scoreNoteLengthDiversity: ScoringsFunction = (
 	{ melody, params, voiceSplits, voices },
 ) => {
 	melody = limitMelody(melody, voiceSplits, voices);

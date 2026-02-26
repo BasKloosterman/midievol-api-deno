@@ -23,7 +23,7 @@ import {
 import { Context } from "jsr:@oak/oak/context";
 import { limitMelody } from "./src/scoring/util.ts";
 import { scoreMusicLength } from "./src/scoring/normalize.ts";
-import { scoreNoteDiversity } from "./src/scoring/enthropy.ts";
+import { scoreNoteLengthDiversity } from "./src/scoring/enthropy.ts";
 import { scoreNoteDistribution, scoreOverlap } from "./src/scoring/position.ts";
 import { scoreBpm } from "./src/scoring/bpm.ts";
 import { scoreEnergyWaves } from "./src/scoring/energy.ts";
@@ -194,7 +194,7 @@ export const scoringFunctions: ScoringDefinition[] = [
 		splitVoices: false,
 		scoreRange: [null, 0],
 	}, {
-		fn: scoreNoteDiversity,
+		fn: scoreNoteLengthDiversity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
 		hasNormalizedScore: true,
