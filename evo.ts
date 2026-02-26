@@ -1,6 +1,7 @@
 // evo.ts
 
 
+import { maybeMutateBpm } from "./bpm.ts";
 import { Note, qNote } from "./src/notes/index.ts";
 import { FuncScore, Param, score, ScoreInfo, ScoringsFunction } from "./src/scoring/index.ts";
 import { applySplitVoices, calcTotalLen } from "./src/scoring/util.ts";
@@ -32,7 +33,7 @@ export function randAdd(
 }
 
 export function normalizeChildren(
-	children: { melody: Note[]; scores: (FuncScore | null)[] }[],
+	children: { melody: Note[]; scores: (FuncScore | null)[], bpm: number }[],
 	scoreFuncs: ScoringDefinition[],
 ) {
 	const scoresByFunc = children.map((child) => child.scores);
@@ -52,6 +53,7 @@ export function normalizeChildren(
 		melody: Note[];
 		scores: (FuncScore | null)[];
 		normalizedScores: (FuncScore | null)[];
+		bpm: number;
 	}[] = children.map((child, idx) => {
 		return { ...child, normalizedScores: normalizedScoresByChild[idx] };
 	});
@@ -69,9 +71,9 @@ const maxNoteLength = framesPerQNote * 4;
 const maxVolume = 127;
 const maxSongLength = framesPerQNote * 64;
 
-type mutSize = "small" | "medium" | "large";
+export type MutSize = "small" | "medium" | "large";
 
-export const getMutSize = (): mutSize => {
+export const getMutSize = (): MutSize => {
 	const roll = Math.random();
 
 	if (roll < probSmallMutation) {
@@ -86,7 +88,7 @@ export const getMutSize = (): mutSize => {
 
 // Determines how much a note evolution can change
 // the different props of a note
-const deviationSet = (mutSize: mutSize) => {
+const deviationSet = (mutSize: MutSize) => {
 	if (mutSize === "small") {
 		return {
 			pitchDev: 30,
@@ -112,7 +114,7 @@ const deviationSet = (mutSize: mutSize) => {
 };
 
 // ✅ ADDED: rare register jump (octave / 2-octave)
-function maybeRegisterJump(note: Note, mutSize: mutSize) {
+function maybeRegisterJump(note: Note, mutSize: MutSize) {
 	const chance =
 	  mutSize === "small" ? 0.005 :
 	  mutSize === "medium" ? 0.015 :
@@ -131,7 +133,7 @@ function maybeRegisterJump(note: Note, mutSize: mutSize) {
 }
   
 
-function evoNote(note: Note, mutSize: mutSize): Note {
+function evoNote(note: Note, mutSize: MutSize): Note {
 	const newNote = note.copy();
 
 	const { pitchDev, lengthDev, volDev, posDev } = deviationSet(mutSize);
@@ -165,7 +167,7 @@ function spawnNote(
 	return t;
 }  
 
-function evoChild(melody: Note[], mutSize: mutSize, small = 0.02, medium = 0.1, large = 0.3): Note[] {
+function evoChild(melody: Note[], mutSize: MutSize, small = 0.02, medium = 0.1, large = 0.3): Note[] {
 	const child: Note[] = [];
 
 	for (const note of melody) {
@@ -191,7 +193,7 @@ function evoChild(melody: Note[], mutSize: mutSize, small = 0.02, medium = 0.1, 
 }
 
 function accordingToMutSize(
-	mutSize: mutSize,
+	mutSize: MutSize,
 	small = 0.001,
 	medium = 0.03,
 	large = 0.05,
@@ -208,7 +210,7 @@ function accordingToMutSize(
 	return roll < large;
 }
 
-function pickMacroMut(mutSize: mutSize)  {
+function pickMacroMut(mutSize: MutSize)  {
 	const ret = {
 		duplicateRandomNote: false,
 		removeRandomNote: false,
@@ -231,7 +233,7 @@ function pickMacroMut(mutSize: mutSize)  {
 
 function grabNoteSet(
 	melody: Note[],
-	mutSize: mutSize,
+	mutSize: MutSize,
 	size?: number,
 ): [number, number] {
 	let numNotes: number;
@@ -257,7 +259,7 @@ function grabNoteSet(
 	return [pos, Math.min(pos + numNotes, melody.length)];
 }
 
-export function insertTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
+export function insertTimePeriod(melody: Note[], mutSize: MutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 
@@ -283,7 +285,7 @@ export function insertTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
 }
 
 
-export function duplicateNotes(melody: Note[], mutSize: mutSize): Note[] {
+export function duplicateNotes(melody: Note[], mutSize: MutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	const lastNote = melody.at(-1);
@@ -302,7 +304,7 @@ export function duplicateNotes(melody: Note[], mutSize: mutSize): Note[] {
 	return melody
 }
 
-export function deleteTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
+export function deleteTimePeriod(melody: Note[], mutSize: MutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	if (start >= melody.length) return melody;
 
@@ -323,13 +325,13 @@ export function deleteTimePeriod(melody: Note[], mutSize: mutSize): Note[] {
 }
 
 
-export function removeNotes(melody: Note[], mutSize: mutSize): Note[] {
+export function removeNotes(melody: Note[], mutSize: MutSize): Note[] {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	melody.splice(start, stop - start);
 	return melody;
 }
 
-function reversePitches(melody: Note[], mutSize: mutSize): boolean {
+function reversePitches(melody: Note[], mutSize: MutSize): boolean {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	if (notes.length < 2) {
@@ -345,7 +347,7 @@ function reversePitches(melody: Note[], mutSize: mutSize): boolean {
 	return true
 }
 
-function reverseNotes(melody: Note[], mutSize: mutSize) {
+function reverseNotes(melody: Note[], mutSize: MutSize) {
 	const [start, stop] = grabNoteSet(melody, mutSize);
 	const notes = melody.slice(start, stop);
 	if (notes.length < 2) {
@@ -396,6 +398,7 @@ export function evo(
 	nGens: number,
 	scoreDefs: ScoringDefinition[],
 	voiceSplits: { min: number; max: number },
+	bpm: number
 ) {
 	if (melody.length === 0) {
 		throw new Error("Cannot evolve empty melody");
@@ -404,9 +407,10 @@ export function evo(
 	let nMelody = melody;
 	let nScoreList: (FuncScore | null)[] = [];
 	let nScore: score = 0;
+	let nBpm: number = bpm
 
 	for (let gen = 0; gen < nGens; gen++) {
-		const children: { melody: Note[]; scores: (FuncScore | null)[] }[] = [];
+		const children: { melody: Note[]; scores: (FuncScore | null)[]; bpm: number }[] = [];
 		// First add self to compare to original later
 		const scores = scoreDefs.map((def) =>
 			def.weight !== 0
@@ -415,17 +419,19 @@ export function evo(
 					params: def.params,
 					voiceSplits,
 					voices: def.voices,
-					splitVoices: def.splitVoices
+					splitVoices: def.splitVoices,
+					bpm
 				})
 				: null
 		);
-		children.push({ melody: nMelody.slice(), scores });
+		children.push({ melody: nMelody.slice(), scores, bpm });
 
 		const mutSize = getMutSize();
 		
 		for (let i = 0; i < nChildren; i++) {
 			const macroMut = pickMacroMut(mutSize)
 			let evolved: Note[] = [];
+			let childBpm = bpm;
 
 			// swap a couple of notes in place
 			if (macroMut.reverseNotes) {
@@ -445,6 +451,7 @@ export function evo(
 			}
 
 			evolved = evoChild(evolved.concat(nMelody), mutSize);
+			childBpm = maybeMutateBpm(bpm, mutSize)
 
 			// Remove random note
 			if (macroMut.removeRandomNote && evolved.length > 1) {
@@ -479,12 +486,13 @@ export function evo(
 						params: def.params,
 						voiceSplits,
 						voices: def.voices,
-						splitVoices: def.splitVoices
+						splitVoices: def.splitVoices,
+						bpm: childBpm
 					})
 					: null
 			);
 
-			children.push({ melody: evolved.slice(), scores: evolvedScores });
+			children.push({ melody: evolved.slice(), scores: evolvedScores, bpm: childBpm });
 		}
 
 
@@ -492,11 +500,12 @@ export function evo(
 
 		
 		const scoredChildren = normalizedChildren.map(
-			({ melody, scores, normalizedScores }) => ({
+			({ melody, scores, normalizedScores, bpm }) => ({
 				melody,
 				scores,
 				normalizedScores,
 				combinedScore: combineScores(normalizedScores, scoreDefs),
+				bpm
 			}),
 		);
 
@@ -518,8 +527,11 @@ export function evo(
 			nMelody = bestChild.melody;
 			nScoreList = bestChild.scores;
 			nScore = bestChild.combinedScore;
+			nBpm = bestChild.bpm;
 		}
+
+		
 	}
 
-	return { melody: nMelody, scores: nScoreList, score: nScore };
+	return { melody: nMelody, scores: nScoreList, score: nScore, bpm: nBpm };
 }

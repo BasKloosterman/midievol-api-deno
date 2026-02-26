@@ -25,6 +25,7 @@ import { limitMelody } from "./src/scoring/util.ts";
 import { scoreNoteCount } from "./src/scoring/normalize.ts";
 import { scoreNoteDiversity } from "./src/scoring/enthropy.ts";
 import { scoreNoteDistribution, scoreOverlap } from "./src/scoring/position.ts";
+import { scoreBpm } from "./src/scoring/bpm.ts";
 
 // function normalizeMinInfToZero(scores: (FuncScore | null)[], debug = false): score[] {
 // 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
@@ -247,6 +248,21 @@ export const scoringFunctions: ScoringDefinition[] = [
 		splitVoices: false,
 		scoreRange: [-1, 1],
 		
+	}, {
+		fn: scoreBpm,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		hasNormalizedScore: false,
+		params: [{
+			name: "optimum",
+			range: [50, 200],
+			value: 95,
+			type: "float",
+		}],
+		voices: [true, true, true],
+		splitVoices: false,
+		scoreRange: [-1, 1],
+		
 	}
 ];
 
@@ -283,12 +299,13 @@ export async function evolveHandler(ctx: Context) {
 	const voices = body.voices;
 	const melody = parseDNA(body.dna).sort((a, b) => a.position - b.position);
 
-	const { melody: evolved, scores: scoresPerFunc, score } = evo(
+	const { melody: evolved, scores: scoresPerFunc, score, bpm } = evo(
 		melody,
 		body.children || 50,
 		body.x_gens,
 		updatedFuncs,
 		voices,
+		body.bpm
 	);
 
 	ctx.response.body = {
@@ -296,7 +313,7 @@ export async function evolveHandler(ctx: Context) {
 		scores_per_func: scoresPerFunc,
 		score,
 		dna: melodyToDNA(evolved),
-		bpm: 90,
+		bpm,
 	};
 }
 
@@ -313,14 +330,16 @@ export async function initHandler(ctx: Context) {
 				params: s.params,
 				voiceSplits: voices,
 				voices: s.voices,
-				splitVoices: s.splitVoices
+				splitVoices: s.splitVoices,
+				bpm: body.bpm
 			})
 			: {score: 0, info: []}
 	);
 
-	const children: { melody: Note[]; scores: (FuncScore | null)[] }[] = [{
+	const children: { melody: Note[]; scores: (FuncScore | null)[], bpm: number }[] = [{
 		melody,
 		scores,
+		bpm: body.bpm
 	}];
 	const normalized = normalizeChildren(children, updatedFuncs);
 	const [notes, scoresPerFunc, score] = [

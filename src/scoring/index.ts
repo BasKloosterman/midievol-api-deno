@@ -31,6 +31,7 @@ export interface ScoringsFunctionArgs {
 	voiceSplits: { min: number; max: number };
 	voices: [boolean, boolean, boolean];
 	splitVoices: boolean;
+	bpm: number;
 }
 
 export type score = number | null;
