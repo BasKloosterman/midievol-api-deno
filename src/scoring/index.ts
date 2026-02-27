@@ -14,7 +14,7 @@ export {
 export { scoreMelodicMotifs, scoreRhythmicMotifs } from "./motifs.ts";
 export { scoreTonality } from "./tonality.ts";
 // export { scoreNormalizeMelodic } from "./normalize.ts";
-export { scoreNoteDiversity } from "./enthropy.ts";
+export { scoreNoteLengthDiversity } from "./enthropy.ts";
 import { Note } from "../notes/index.ts";
 
 export type ParamType = "note" | "float" | "int" | "bool";

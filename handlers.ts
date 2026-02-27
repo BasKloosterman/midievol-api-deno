@@ -318,9 +318,9 @@ export const scoringFunctions: ScoringDefinition[] = [
 		hasNormalizedScore: false,
 		params: [{
 			name: "maxGapBeats",
-			range: [1, 8],
+			range: [0.1, 10],
 			value: 3,
-			type: "int",
+			type: "float",
 		}],
 		voices: [true, true, true],
 		splitVoices: false,
