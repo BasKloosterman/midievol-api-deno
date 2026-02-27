@@ -145,7 +145,7 @@ function scoreRatiosWithBoundaries(
     ratios: number[],
     varMinUser: number,   // 0..10
     varMaxUser: number,   // 0..10
-    eventsCount: number   // #onset events
+    notesCount: number   // #onset events
 ): { score: number; info: ScoreInfo[] } {
     const tiny = 1e-6
     let penalty = 0
@@ -157,8 +157,8 @@ function scoreRatiosWithBoundaries(
 
     // Theoretisch maximum spike gegeven het materiaal:
     // rMaxPossible = (Emax+1)/(0+1) = Emax+1
-    // EmaxPossible ~ eventsCount
-    const EmaxPossible = Math.max(1, eventsCount)
+    // EmaxPossible ~ notscount
+    const EmaxPossible = Math.max(1, notesCount)
     const DmaxPossible = Math.log(EmaxPossible + 1) // |log(r)| max (ongeveer)
 
     // Map user 0..10 naar echte D-grenzen
@@ -204,7 +204,7 @@ function scoreRatiosWithBoundaries(
         { name: 'boundariesSkipped', value: '' + boundariesSkipped },
         { name: 'transitionsTotal', value: '' + transitionsTotal },
         { name: 'transitionsUsed', value: '' + transitionsUsed },
-        { name: 'eventsCount', value: '' + eventsCount },
+        { name: 'notesCount', value: '' + notesCount },
         { name: 'DmaxPossible', value: '' + DmaxPossible },
         { name: 'MinVar', value: '' + MinVar },
         { name: 'MaxVar', value: '' + MaxVar },
@@ -264,57 +264,50 @@ export const scoreEnergyWaves: ScoringsFunction = ({
         Math.round(framesPerQNote / onsetMergeSubdivision)
     )
 
-    // ---- Events ----
-    const events = extractOnsetEventsMerged(melody, toleranceFrames)
-    if (events.length < 2 || windowFrames <= 0 || stepFrames <= 0) {
-        return {
-            score: -999,
-            info: [
-                { name: 'reason', value: 'too_few_events_or_bad_window' },
-            ],
-        }
-    }
+    // ---- Score per voice, dan gemiddeld ----
+const originalMelody = melody;
 
-    // Range: start op 0 zodat measure-grid “netjes” is
-    const rangeStart = 0
-    const rangeEnd = events[events.length - 1] + windowFrames
+let total = 0;
+let used = 0;
 
-    // ---- Energy per window ----
-    const energy = computeEnergySeries(
-        events,
-        windowFrames,
-        stepFrames,
-        rangeStart,
-        rangeEnd
-    )
-    if (energy.length < 2) {
-        return {
-            score: -999,
-            info: [{ name: 'reason', value: 'energy_too_short' }],
-        }
-    }
+for (let v = 0; v < voices.length; v++) {
+  if (!voices[v]) continue;
 
-    // ---- Ratios ----
-    const ratios = computeRatios(energy, 1)
+  // alleen deze voice selecteren via jullie bestaande voiceSplits logic
+  const voiceMask: [boolean, boolean, boolean] = [
+  v === 0,
+  v === 1,
+  v === 2,
+];
+  const m = limitMelody(originalMelody, voiceSplits, voiceMask);
+  if (m.length === 0) continue;
 
-    // ---- Score ----
-const { score } = scoreRatiosWithBoundaries(
+  const events = extractOnsetEventsMerged(m, toleranceFrames);
+  if (events.length < 2 || windowFrames <= 0 || stepFrames <= 0) continue;
+
+  const rangeStart = 0;
+  const rangeEnd = events[events.length - 1] + windowFrames;
+
+  const energy = computeEnergySeries(events, windowFrames, stepFrames, rangeStart, rangeEnd);
+  if (energy.length < 2) continue;
+
+  const ratios = computeRatios(energy, 1);
+
+  const { score } = scoreRatiosWithBoundaries(
     energy,
     ratios,
-    minUser,
-    maxUser,
-    events.length
-);
+    minUser,   // 0..10
+    maxUser,   // 0..10
+    m.length   // <-- notesCount per voice voor "potentie"
+  );
 
-    // // Voeg wat handige param-info toe (optioneel)
-    // const extraInfo = [
-    //     // { name: "MinVar", value: MinVar },
-    //     // { name: "MaxVar", value: MaxVar },
-    //     // { name: "beatsPerMeasure", value: beatsPerMeasure },
-    //     // { name: "stepBeats", value: stepBeats },
-    //     // { name: "onsetMergeSubdivision", value: onsetMergeSubdivision },
-    //     // { name: "toleranceFrames", value: toleranceFrames },
-    // ]
+  total += score;
+  used++;
+}
 
-    return { score, info: []}
+if (used === 0) {
+  return { score: -999, info: [{ name: 'reason', value: 'no_valid_voices' }] };
+}
+
+return { score: total / used, info: [] };
 }

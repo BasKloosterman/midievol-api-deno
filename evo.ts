@@ -167,12 +167,34 @@ function spawnNote(
 	return t;
 }  
 
-function evoChild(melody: Note[], mutSize: MutSize, small = 0.02, medium = 0.1, large = 0.3): Note[] {
+function evoChild(
+	melody: Note[],
+	mutSize: MutSize,
+	singleMutation: boolean,
+	small = 0.02,
+	medium = 0.1,
+	large = 0.3
+): Note[] {
 	const child: Note[] = [];
+	let forcedIndex = -1;
 
-	for (const note of melody) {
+	if (singleMutation && melody.length > 0) {
+	forcedIndex = Math.floor(Math.random() * melody.length);
+}
+
+	for (let i = 0; i < melody.length; i++) {
+	const note = melody[i];
+
+	let mutate = false;
+
+	if (singleMutation) {
+		// EXACT 1 noot mag muteren
+		mutate = i === forcedIndex;
+
+	} else {
+
+		// huidig probabilistisch gedrag
 		const mutChance = Math.random();
-		let mutate = false;
 
 		if (mutSize === "small") {
 			mutate = mutChance <= small;
@@ -181,13 +203,14 @@ function evoChild(melody: Note[], mutSize: MutSize, small = 0.02, medium = 0.1, 
 		} else {
 			mutate = mutChance <= large;
 		}
-
-		if (mutate) {
-			child.push(evoNote(note, mutSize));
-		} else {
-			child.push(note.copy());
-		}
 	}
+
+	if (mutate) {
+		child.push(evoNote(note, mutSize));
+	} else {
+		child.push(note.copy());
+	}
+}
 
 	return child;
 }
@@ -412,31 +435,32 @@ export function evo(
 	for (let gen = 0; gen < nGens; gen++) {
 		const children: { melody: Note[]; scores: (FuncScore | null)[]; bpm: number }[] = [];
 		// First add self to compare to original later
-		const scores = scoreDefs.map((def) =>
-			def.weight !== 0
-				? applySplitVoices(def.fn, {
-					melody,
-					params: def.params,
-					voiceSplits,
-					voices: def.voices,
-					splitVoices: def.splitVoices,
-					bpm
-				})
-				: null
-		);
-		children.push({ melody: nMelody.slice(), scores, bpm });
+		// First add current parent ("self") so normalization compares against current organism
+        const scores = scoreDefs.map((def) =>
+         def.weight !== 0
+       ? applySplitVoices(def.fn, {
+        melody: nMelody,
+        params: def.params,
+        voiceSplits,
+        voices: def.voices,
+        splitVoices: def.splitVoices,
+        bpm: nBpm,
+      })
+    : null
+);
 
-		const mutSize = getMutSize();
+children.push({ melody: nMelody.slice(), scores, bpm: nBpm });
+
 		
 		for (let i = 0; i < nChildren; i++) {
+			const mutSize = getMutSize();
+			const singleMutation = Math.random() < 0.5;   // ← nieuw probeersel! de helft van de kids mag maar 1 mutatie
 			const macroMut = pickMacroMut(mutSize)
 			let evolved: Note[] = [];
-			let childBpm = bpm;
+			let childBpm = nBpm;
 
-			// swap a couple of notes in place
-			if (macroMut.reverseNotes) {
-				reverseNotes(evolved, mutSize);
-			}
+
+			
 
 			// Duplicate random note
 			if (macroMut.duplicateRandomNote) {
@@ -446,12 +470,17 @@ export function evo(
 			}
 
 			if (macroMut.spawnNote) {
-				spawnNote(calcTotalLen(evolved) + 1 * qNote)
-				evolved.push();
+    		const newNote = spawnNote(calcTotalLen(evolved) + 1 * qNote);
+    		evolved.push(newNote);
 			}
 
-			evolved = evoChild(evolved.concat(nMelody), mutSize);
-			childBpm = maybeMutateBpm(bpm, mutSize)
+			evolved = evoChild(evolved.concat(nMelody), mutSize, singleMutation);
+			childBpm = maybeMutateBpm(nBpm, mutSize)
+
+			// swap a couple of notes in place
+			if (macroMut.reverseNotes) {
+				reverseNotes(evolved, mutSize);
+			}
 
 			// Remove random note
 			if (macroMut.removeRandomNote && evolved.length > 1) {
@@ -525,7 +554,7 @@ export function evo(
 
 		if (bestChild) {
 			nMelody = bestChild.melody;
-			nScoreList = bestChild.scores;
+			nScoreList = bestChild.scores; 
 			nScore = bestChild.combinedScore;
 			nBpm = bestChild.bpm;
 		}

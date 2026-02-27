@@ -139,8 +139,13 @@ export const scoreMeasureForChord: ScoringsFunction = (
 	  return null;
 	}
   
-	const allowedChords = buildAllowedChords(params[0]);
-	const optimum = typeof params[1] === "number" ? params[1] : 0.8;
+	const allowedChords = buildAllowedChords(params[0]); // ok
+	const optimum =
+  	typeof params[1] === "number"
+    ? params[1]
+    : (params[1] && typeof params[1] === "object" && "value" in params[1])
+      ? Number((params[1] as any).value)
+      : 1;
   
 	const bars = getMeasures(melody);
   
