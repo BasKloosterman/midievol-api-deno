@@ -1,5 +1,5 @@
 import { framesPerQNote, Note } from "../notes/index.ts";
-import { FuncScore, score, ScoreInfo, ScoringsFunction, ScoringsFunctionArgs } from "./index.ts";
+import { FuncScore, Param, score, ScoreInfo, ScoringsFunction, ScoringsFunctionArgs } from "./index.ts";
 
 export function scoreValue(
 	optimalValue: number,
@@ -260,3 +260,8 @@ export function applySplitVoices(scoreFn: ScoringsFunction, args: ScoringsFuncti
 
 	return result
 }
+
+export function getNumberParam(params: Param[], idx: number, fallback: number): number {
+	const v = params?.[idx]?.value;
+	return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+  }

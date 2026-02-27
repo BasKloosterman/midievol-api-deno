@@ -27,6 +27,7 @@ import { scoreNoteLengthDiversity } from "./src/scoring/enthropy.ts";
 import { scoreNoteDistribution, scoreOverlap } from "./src/scoring/position.ts";
 import { scoreBpm } from "./src/scoring/bpm.ts";
 import { scoreEnergyWaves } from "./src/scoring/energy.ts";
+import { scoreMaxGap } from "./src/scoring/gap.ts";
 
 // function normalizeMinInfToZero(scores: (FuncScore | null)[], debug = false): score[] {
 // 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
@@ -275,7 +276,7 @@ export const scoringFunctions: ScoringDefinition[] = [
 		hasNormalizedScore: false,
 		voices: [true, true, true],
 		splitVoices: false,
-		scoreRange: [null,1],
+		scoreRange: [null,0],
 		normalizationFn: normalizeMinOneToOne,
 		params: [
 			{
@@ -309,6 +310,21 @@ export const scoringFunctions: ScoringDefinition[] = [
 				type: 'int'
 			},
 		]	
+	},
+	{
+		fn: scoreMaxGap,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		hasNormalizedScore: false,
+		params: [{
+			name: "maxGapBeats",
+			range: [1, 8],
+			value: 3,
+			type: "int",
+		}],
+		voices: [true, true, true],
+		splitVoices: false,
+		scoreRange: [null, 0],
 	}
 ];
 

@@ -1,7 +1,7 @@
 // src/scoring/energy.ts
 import { Note, framesPerQNote } from '../notes/index.ts'
-import { Param, ScoreInfo, ScoringsFunction } from './index.ts'
-import { limitMelody } from './util.ts'
+import { ScoreInfo, ScoringsFunction } from './index.ts'
+import { getNumberParam, limitMelody } from './util.ts'
 
 /**
  * ENERGY WAVES (ratio-based)
@@ -23,14 +23,14 @@ import { limitMelody } from './util.ts'
 // ---------------------------------------------------------
 // Param helper
 // ---------------------------------------------------------
-function getNumberParam(
-    params: Param[],
-    idx: number,
-    fallback: number
-): number {
-    const v = params?.[idx]?.value
-    return typeof v === 'number' && Number.isFinite(v) ? v : fallback
-}
+// function getNumberParam(
+//     params: Param[],
+//     idx: number,
+//     fallback: number
+// ): number {
+//     const v = params?.[idx]?.value
+//     return typeof v === 'number' && Number.isFinite(v) ? v : fallback
+// }
 
 /**
  * 1) Zet noten om naar onset-events (startmomenten), met "merge tolerance".
