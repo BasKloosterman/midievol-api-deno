@@ -417,6 +417,6 @@ export async function initHandler(ctx: Context) {
 		scores_per_func: scoresPerFunc,
 		score,
 		dna: melodyToDNA(notes),
-		bpm: 90,
+		bpm: body.bpm,
 	};
 }
