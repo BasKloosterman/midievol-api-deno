@@ -22,13 +22,35 @@ export const scoreMusicLength: ScoringsFunction = (
 	{ melody, voiceSplits, voices, params },
 ) => {
 	melody = limitMelody(melody, voiceSplits, voices);
-	if (melody.length === 0) {
-		return null;
-	}
+	if (melody.length === 0) return null;
 
 	const len = calcTotalLen(melody);
 
-	return  {score: -Math.abs((params[0].value * framesPerQNote) - len), info: []};
+	const target = params[0].value * framesPerQNote;
+
+	// plateau totaal = 20% van target, met max 4 tellen totaal
+	const plateauTotal = Math.min(0.2 * target, 4 * framesPerQNote);
+	const half = plateauTotal / 2;
+
+	const dist = Math.abs(target - len);
+
+	// shoulder zone: even breed als half-plateau (aanpasbaar)
+	const shoulder = half;
+
+	let penalty = 0;
+
+	if (dist <= half) {
+		penalty = 0;
+	} else if (dist <= half + shoulder) {
+		// mild: kwadratisch oplopend van 0..shoulder
+		const x = (dist - half) / shoulder; // 0..1
+		penalty = (x * x) * shoulder;
+	} else {
+		// daarna lineair, startend vanaf shoulder
+		penalty = shoulder + (dist - (half + shoulder));
+	}
+
+	return { score: -penalty, info: [] };
 };
 
 // Deprecated, not usefull anymore, is regulated in other funcs
