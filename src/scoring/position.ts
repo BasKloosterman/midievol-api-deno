@@ -100,44 +100,58 @@ export const _scoreOverlap = ({
   melody: Note[];
   optimum: number;
 }) => {
-  if (melody.length < 2) {
-    return 1 - optimum;
+  if (melody.length === 0) return -1;
+
+  const allowed = Math.max(0, Math.round(optimum)) + 1;
+
+  const events: { t: number; d: number }[] = [];
+
+  for (const n of melody) {
+    const start = n.position;
+    const end = n.position + n.length;
+
+    if (end <= start) continue;
+
+    events.push({ t: start, d: +1 });
+    events.push({ t: end, d: -1 });
   }
 
-  optimum = Math.round(optimum);
-  const overlapsPerNote: number[] = melody.map((x) => 0);
+  if (events.length === 0) return -1;
 
-  for (const [idx, curNote] of melody.slice(0, melody.length - 1).entries()) {
-    const overlappingPitches: number[] = [];
-    const pitch = Math.round(curNote.pitch / 10);
+  // Note-off eerst bij gelijke tijd
+  events.sort((a, b) => (a.t - b.t) || (a.d - b.d));
 
-    const start = curNote.position;
-    const end = curNote.position + curNote.length;
+  let active = 0;
+  let prevT = events[0].t;
 
-    for (const [innerIdx, otherNote] of melody.slice(idx + 1).entries()) {
-      const otherNoteIdx = idx + (innerIdx + 1);
+  let totalTime = 0;
+  let overArea = 0;
 
-      const overlappingPitch = Math.round(otherNote.pitch / 10);
+  for (const e of events) {
+    const dt = e.t - prevT;
 
-      if (
-        otherNote.position >= start &&
-        otherNote.position <= end &&
-        pitch != overlappingPitch &&
-        !overlappingPitches.includes(overlappingPitch)
-      ) {
-        overlappingPitches.push(overlappingPitch);
-        overlapsPerNote[idx] += 1;
-        overlapsPerNote[otherNoteIdx] += 1;
+    if (dt > 0) {
+      totalTime += dt;
+
+      if (active > allowed) {
+        overArea += (active - allowed) * dt;
       }
+
+      prevT = e.t;
     }
+
+    active += e.d;
   }
 
-  const penalty = overlapsPerNote.reduce(
-    (acc, val) => acc + Math.abs(val - optimum),
-    0
-  );
+  if (totalTime <= 0) return -1;
 
-  return 1 - penalty / melody.length;
+  const maxOver = Math.max(1, melody.length - allowed);
+  const avgOver = overArea / totalTime;
+  const severity = Math.min(1, Math.max(0, avgOver / maxOver));
+
+  const score01 = 1 - severity;
+
+  return score01 * 2 - 1;
 };
 
 // export const _scoreOverlap = ({

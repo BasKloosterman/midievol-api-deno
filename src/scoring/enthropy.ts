@@ -33,38 +33,57 @@ function calculateNoteLengthDiversity(
 	noteLengthPreference: number = 0.5, // 0 = short, 1 = long
 ): number {
 	if (noteLengths.length === 0) return 0;
+	targetDiversity = Math.max(0, Math.min(targetDiversity, 1));
 
-	// Frequency count
-	const frequencyMap = new Map<number, number>();
-	for (let length of noteLengths) {
-		length = Math.round(length % 75)
-		frequencyMap.set(length, (frequencyMap.get(length) || 0) + 1);
-	}
+	// --- DIVERSITY via standaarddeviatie (continu, geen buckets) ---
+	const minLen = 75;
+	const maxLen = 2400;
 
-	// Normalize distribution
-	const totalNotes = noteLengths.length;
-	const probabilities = Array.from(frequencyMap.values()).map(
-		(count) => count / totalNotes,
-	);
+// normalize lengths to 0..1
+const norm = noteLengths.map((l) =>
+  Math.max(0, Math.min((l - minLen) / (maxLen - minLen), 1)),
+);
 
-	// Shannon entropy
-	const entropy = -probabilities.reduce(
-		(sum, p) => sum + (p > 0 ? p * Math.log2(p) : 0),
-		0,
-	);
+const mean = norm.reduce((a, b) => a + b, 0) / norm.length;
+const variance =
+  norm.reduce((acc, x) => acc + (x - mean) * (x - mean), 0) / norm.length;
 
-	// Normalize entropy
-	const maxEntropy = Math.log2(frequencyMap.size);
-	const diversity = maxEntropy > 0 ? entropy / maxEntropy : 0;
+const std = Math.sqrt(variance);
 
-	// Score based on diversity target
-	const score = 1 - Math.abs(diversity - targetDiversity);
+// std in [0..0.5] for values in [0..1] (max at half 0s half 1s)
+const stdNorm = Math.min(std / 0.5, 1); // map to 0..1
 
-	// Combine with original score, reduce influence if poor match
-	const scoreLengthScore = scoreNoteLengthsByPreference(noteLengths, noteLengthPreference);
+// match target
+const maxDistance = Math.max(targetDiversity, 1 - targetDiversity) || 1;
+const rawScore = 1 - Math.abs(stdNorm - targetDiversity) / maxDistance;
+const score = Math.max(0, Math.min(rawScore, 1));
 
 
-	return ((targetDiversity * score) + ((1 - targetDiversity) * scoreLengthScore)) * 2 - 1;
+
+	const pref = Math.max(0, Math.min(noteLengthPreference, 1));
+	const target = minLen + pref * (maxLen - minLen);
+
+	const avgLen = noteLengths.reduce((a, b) => a + b, 0) / noteLengths.length;
+
+	// score: 1 als avgLen == target, 0 als zo ver mogelijk weg
+	const maxDist = Math.max(target - minLen, maxLen - target) || 1;
+	const lengthScore = 1 - Math.min(Math.abs(avgLen - target) / maxDist, 1);	
+
+	// Dynamische mix: meer noten => diversity betrouwbaarder => zwaarder meewegen
+	// Subtiel: mix in [0.35..0.65]
+	const n = noteLengths.length;
+
+	// n=8 => t=0, n=48 => t=1 (clamped)
+	const t = Math.max(0, Math.min((n - 8) / 40, 1));
+
+	const diversityMix = 0.35 + 0.30 * t; // 0.35 -> 0.65
+
+	const combined = (diversityMix * score) + ((1 - diversityMix) * lengthScore);
+	
+	
+
+
+	return combined * 2 - 1;
 }
 
 export const scoreNoteLengthDiversity: ScoringsFunction = (
