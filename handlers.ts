@@ -28,7 +28,8 @@ import { scoreNoteDistribution, scoreOverlap } from "./src/scoring/position.ts";
 import { scoreBpm } from "./src/scoring/bpm.ts";
 import { scoreEnergyWaves } from "./src/scoring/energy.ts";
 import { scoreMaxGap } from "./src/scoring/gap.ts";
-
+import { scoreVelocityDiversity } from "./src/scoring/velocity.ts";
+ 
 // function normalizeMinInfToZero(scores: (FuncScore | null)[], debug = false): score[] {
 // 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
 // 	const m = minScore === 0 ? 0 : 1 / minScore;
@@ -325,7 +326,31 @@ export const scoringFunctions: ScoringDefinition[] = [
 		voices: [true, true, true],
 		splitVoices: false,
 		scoreRange: [null, 0],
+	},
+	{
+		fn: scoreVelocityDiversity,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		hasNormalizedScore: false,
+		params: [
+			{
+				name: "Target diversity",
+				range: [0, 1],
+				value: 1,
+				type: "float",
+			},
+			{
+				name: "Note Vel preference",
+				range: [0, 1],
+				value: 0.5,
+				type: "float",
+			},
+		],
+		voices: [true, true, true],
+		splitVoices: true,
+		scoreRange: [null, 0],
 	}
+
 ];
 
 function updateFuncWeights(userMods: any[]): ScoringDefinition[] {
