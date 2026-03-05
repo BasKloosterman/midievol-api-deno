@@ -17,6 +17,25 @@ const normLengthMax = framesPerQNote;
 // 	const penalty = Math.exp(-deviation / 5);
 // 	return maxScore * penalty;
 // }
+export const scoreGrowth: ScoringsFunction = (
+  { melody, voiceSplits, voices },
+) => {
+  melody = limitMelody(melody, voiceSplits, voices);
+
+  const n = melody.length;
+
+	let score;
+
+	if (n <= 12) {
+  	score = n;
+	} else {
+  	score = 12 + Math.sqrt(n - 12);
+	}
+
+  if (n === 0) return null;
+
+  return { score, info: [] };
+};
 
 export const scoreMusicLength: ScoringsFunction = (
 	{ melody, voiceSplits, voices, params },

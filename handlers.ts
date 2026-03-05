@@ -30,7 +30,8 @@ import { scoreEnergyWaves } from "./src/scoring/energy.ts";
 import { scoreMaxGap } from "./src/scoring/gap.ts";
 import { scoreVelocityDiversity } from "./src/scoring/velocity.ts";
 import { scorePitchClassDiversity } from "./src/scoring/pitchclassdiversity.ts";
- 
+import { scoreGrowth } from "./src/scoring/normalize.ts";
+
 // function normalizeMinInfToZero(scores: (FuncScore | null)[], debug = false): score[] {
 // 	const minScore = -1 * Math.min(...scores.filter((x) => x != null));
 // 	const m = minScore === 0 ? 0 : 1 / minScore;
@@ -219,7 +220,7 @@ export const scoringFunctions: ScoringDefinition[] = [
 		splitVoices: false,
 		scoreRange: [-1, 1],
 	}, {
-		fn: scoreGrowthDensity,
+		fn: scoreVoiceDensity,
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
 		hasNormalizedScore: false,
@@ -352,18 +353,30 @@ export const scoringFunctions: ScoringDefinition[] = [
 		scoreRange: [null, 0],
 	},
 	{
- 	 fn: scorePitchClassDiversity,
-  	weight: 0,
-  	normalizationFn: normalizeMinOneToOne,
-  	hasNormalizedScore: true,
-  	params: [
-    { name: "Min pitchclass diversity", range: [0.1, 1], value: 0.35, type: "float" },
-    { name: "Max pitchclass diversity", range: [0.1, 1], value: 0.60, type: "float" },
-  	],
-  	voices: [true, true, true],
-  	splitVoices: false,
-  	scoreRange: [-1, 1],
+		fn: scorePitchClassDiversity,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		hasNormalizedScore: true,
+		params: [
+			{ name: "Min pitchclass diversity", range: [0.1, 1], value: 0.35, type: "float" },
+			{ name: "Max pitchclass diversity", range: [0.1, 1], value: 0.60, type: "float" },
+		],
+		voices: [true, true, true],
+		splitVoices: false,
+		scoreRange: [-1, 1],
 	},
+	{
+		fn: scoreGrowth,
+		weight: 0,
+		normalizationFn: normalizeMinOneToOne,
+		hasNormalizedScore: true,
+		params: [],
+		voices: [true, true, true],
+		splitVoices: false,
+		scoreRange: [-1, 1],
+	},
+
+
 
 ];
 
