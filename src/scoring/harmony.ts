@@ -1,6 +1,7 @@
 import { Note } from "../notes/index.ts";
 import {
 	divideInMeasures,
+	FIFTH,
 	getMeasures,
 	intervalIdx,
 	normalizeIntervals,
@@ -76,7 +77,7 @@ export const scoreSimultaneousIntervals: ScoringsFunction = (
 		return {score: 0, info: []};
 	}
 
-	const targetIntervals = [intervalIdx.get(THIRD.toString())];
+	const targetIntervals = [intervalIdx.get(THIRD.toString()), intervalIdx.get(FIFTH.toString())];
 	const containing = normalizedSets.map((ns) =>
 		ns.filter((i) => targetIntervals.includes(i)).length / ns.length
 	);
