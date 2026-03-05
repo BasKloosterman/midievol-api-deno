@@ -120,12 +120,7 @@ export const scoreInKey: ScoringsFunction = (
 	return {score: maxScore * 2 - 1, info: []};
 };
 
-// const allowedChords: Record<string, Set<number>> = {
-// 	majorTriad: new Set([0, 4, 7]),
-// 	minorTriad: new Set([0, 3, 7]),
-// 	dominant: new Set([0, 5, 7, 10]),
-// 	minorSeveth: new Set([0, 3, 7, 10]),
-// };
+
 
 const buildAllowedChords = (param: Param) : Set<number>[] => {
 	const cats  = mapParamToChordCategories(param);

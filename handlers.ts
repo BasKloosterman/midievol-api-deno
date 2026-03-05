@@ -10,7 +10,7 @@ import {
 	FuncScore,
 	score,
 	scoreGridness16th,
-	scoreGrowthDensity,
+	scoreVoiceDensity,
 	ScoreInfo,
 	scoreMeasureForChord,
 	scoreMelodicMotifs,

@@ -309,7 +309,7 @@ export const scoreOverlap: ScoringsFunction = ({
 
 /* OLD density */
 
-// export const _scoreGrowthDensity = ({ melody, density, totalDuration }: {
+// export const _scoreVoiceDensity = ({ melody, density, totalDuration }: {
 // 	melody: Note[];
 // 	density: number;
 // 	totalDuration: number;
@@ -333,7 +333,7 @@ export const scoreOverlap: ScoringsFunction = ({
 // 	);
 // };
 
-// export const scoreGrowthDensity: ScoringsFunction = ({
+// export const scoreVoiceDensity: ScoringsFunction = ({
 // 	melody,
 // 	voiceSplits,
 // 	voices,
@@ -350,7 +350,7 @@ export const scoreOverlap: ScoringsFunction = ({
 // 			false,
 // 		]);
 // 		scores.push(
-// 			_scoreGrowthDensity({
+// 			_scoreVoiceDensity({
 // 				melody: evolvedMelody,
 // 				density: params[0].value,
 // 				totalDuration,
@@ -367,7 +367,7 @@ export const scoreOverlap: ScoringsFunction = ({
 // 			false,
 // 		]);
 // 		scores.push(
-// 			_scoreGrowthDensity({
+// 			_scoreVoiceDensity({
 // 				melody: evolvedMelody,
 // 				density: params[1].value,
 // 				totalDuration,
@@ -384,7 +384,7 @@ export const scoreOverlap: ScoringsFunction = ({
 // 			true,
 // 		]);
 // 		scores.push(
-// 			_scoreGrowthDensity({
+// 			_scoreVoiceDensity({
 // 				melody: evolvedMelody,
 // 				density: params[2].value,
 // 				totalDuration,
@@ -479,7 +479,7 @@ const aggregatePowerMean = (scores: number[], p = -0.5) => {
   return Math.pow(avgPow, 1 / p);
 };
 
-export const scoreGrowthDensity: ScoringsFunction = ({
+export const scoreVoiceDensity: ScoringsFunction = ({
   melody,
   voiceSplits,
   voices,

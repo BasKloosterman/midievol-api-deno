@@ -1,7 +1,7 @@
 export { scoreGridness16th } from "./grid.ts";
 export {
 	scoreAvgNoteDist,
-	scoreGrowthDensity,
+	scoreVoiceDensity,
 	scoreNormalizedDistanceForMelody,
 	scoreTotalDist,
 } from "./position.ts";
@@ -17,6 +17,7 @@ export { scoreTonality } from "./tonality.ts";
 export { scoreNoteLengthDiversity } from "./enthropy.ts";
 export { scoreVelocityDiversity } from "./velocity.ts"; 
 export { scorePitchClassDiversity } from "./pitchclassdiversity.ts";
+export { scoreGrowth } from "./normalize.ts";
 import { Note } from "../notes/index.ts";
 
 export type ParamType = "note" | "float" | "int" | "bool";

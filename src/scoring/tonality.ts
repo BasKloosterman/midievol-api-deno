@@ -1,7 +1,7 @@
 import { Param, ScoringsFunction } from "./index.ts";
 import { limitMelody, pearsonCorr, rotate } from "./util.ts";
 
-type scales = "major" | "minor" | "altered_pent" | "whole_tone" | "lydian" | "major_pentatonic"
+type scales = "major" | "minor" | "dimin" | "whole_tone" | "lydian" | "major_pentatonic"
 
 const MAJOR_PROFILE = [
 	6.33,
@@ -31,20 +31,21 @@ const MINOR_PROFILE = [
 	2.33,
 	2.39,
 ];
-const ALTERED_PENTATONIC_PROFILE = [
+const DIMINISHED_PROFILE = [
+
 	6.0, // 1
-	4.5, // b2
-	0.5,
-	0.5,
-	3.5, // 3
-	0.5,
-	0.5,
-	0.5,
-	4.0, // #5
-	3.0, // 6
-	0.5,
-	0.5
-];
+	0.5, // b2
+	4.5, // 2
+	4.0, // b3
+	0.5, // 3
+	4.5, // 4
+	4.0, // b5
+	0.5, // 5
+	4.5, // b6
+	3.5, // 6
+	0.5, // b7
+	4.0  // 7
+]
 
 const LYDIAN_PROFILE = [
 	6.35, 2.23, 3.48, 2.33, 4.38, 2.52,
@@ -82,7 +83,7 @@ const MAJOR_PENTATONIC_PROFILE = [
 
 const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
 const MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];
-const ALTERED_PENTATONIC_SCALE = [0, 1, 5, 8, 9];
+const DIMINISHED = [0, 2, 3, 5, 6, 8, 9, 11];
 const WHOLE_TONE_SCALE = [0, 2, 4, 6, 8, 10];
 const LYDIAN_SCALE = [0, 2, 4, 6, 7, 9, 11];
 const MAJOR_PENTATONIC_SCALE = [0, 2, 4, 7, 9];
@@ -91,7 +92,7 @@ const MAJOR_PENTATONIC_SCALE = [0, 2, 4, 7, 9];
 const scaleFlagMap : Record<number, scales> = {
 	1: "major",
 	[1 << 1]: "minor",
-	[1 << 2]: "altered_pent",
+	[1 << 2]: "dimin",
 	[1 << 3]: "whole_tone",
 	[1 << 4]: "lydian",
 	[1 << 5]: "major_pentatonic",
@@ -100,7 +101,7 @@ const scaleFlagMap : Record<number, scales> = {
 const scaleIdx : Record<scales, number[]> = {
 	"major": MAJOR_SCALE,
 	"minor": MINOR_SCALE,
-	"altered_pent": ALTERED_PENTATONIC_SCALE,
+	"dimin": DIMINISHED,
 	"whole_tone": WHOLE_TONE_SCALE,
 	"lydian": LYDIAN_SCALE,
 	"major_pentatonic": MAJOR_PENTATONIC_SCALE,
@@ -109,7 +110,7 @@ const scaleIdx : Record<scales, number[]> = {
 const scalesMap : Record<scales, {scale: number[], profile: number[]}> = {
 	"major": {scale: MAJOR_SCALE, profile: MAJOR_PROFILE},
 	"minor": {scale: MINOR_SCALE, profile: MINOR_PROFILE},
-	"altered_pent": {scale: ALTERED_PENTATONIC_SCALE, profile: ALTERED_PENTATONIC_PROFILE},
+	"dimin": {scale: DIMINISHED, profile: DIMINISHED_PROFILE},
 	"whole_tone": { scale: WHOLE_TONE_SCALE, profile: LYDIAN_PROFILE},
 	"lydian": { scale: LYDIAN_SCALE, profile: WHOLE_TONE_PROFILE},
 	"major_pentatonic": { scale: MAJOR_PENTATONIC_SCALE, profile: MAJOR_PENTATONIC_PROFILE}
