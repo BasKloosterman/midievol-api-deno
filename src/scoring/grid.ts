@@ -51,36 +51,33 @@ function getEnabledGrids(param: Param | undefined): GridId[] {
 
 
 function gridScore(
-	melody: Note[],
-	mod: number,                 // single-grid referentie
-	scoreMultiple: boolean,
-	optimumFraction: number,
-	enabledMods: number[] = [],  // <-- nieuw voor multi-grid
-	): number {
-	const diffs = melody
-		.map((note) => {
-			const dist = scoreMultiple
-				? distToAnyEnabledGrid(note.position, enabledMods)
-				: distToGrid(note.position, mod);
+  melody: Note[],
+  mod: number,
+  scoreMultiple: boolean,
+  humanize: number,          // was: optimumFraction
+  enabledMods: number[] = [],
+): number {
+  const diffs = melody.map((note) => {
+    const dist = scoreMultiple
+      ? distToAnyEnabledGrid(note.position, enabledMods)
+      : distToGrid(note.position, mod);
+    return dist;
+  });
 
-			return { note, dist };
-		})
-		.sort((a, b) => a.dist - b.dist);
+  // ✅ multi-grid strenger maken: referentie is fijnste enabled grid
+  const refMod = scoreMultiple ? Math.min(...enabledMods) : mod;
 
-	const optimumNoteCount = Math.max(
-		1,
-		Math.min(melody.length, Math.round(optimumFraction * melody.length)),
-	);
+  // humanize 0..1  ->  free deviation 0..(20% van refMod)
+  const h = Math.max(0, Math.min(1, humanize));
+  const maxFreeFrac = 0.20;
+  const freeDev = h * (refMod * maxFreeFrac);
 
-	const best = diffs.slice(0, optimumNoteCount);
-	const avgDev = best.reduce((acc, cur) => acc + cur.dist, 0) / best.length;
+  // score altijd over alle noten: alleen straf buiten tolerance
+  const avgDev =
+    diffs.reduce((acc, d) => acc + Math.max(0, d - freeDev), 0) / diffs.length;
 
-	// ✅ multi-grid strenger maken: MaxDeviation (= MaxPenalty) wordt bepaald
-	// door de fijnste enabled grid (kleinste mod)
-	const refMod = scoreMultiple ? Math.min(...enabledMods) : mod;
-
-	// let op: mag < 0 worden (geen clamp), jij normaliseert later
-	return ((refMod / 2) - avgDev) / (refMod / 2);
+  // zelfde normalisatie als voorheen
+  return ((refMod / 2) - avgDev) / (refMod / 2);
 }
 
 export const scoreGridness16th: ScoringsFunction = ({
@@ -104,28 +101,7 @@ export const scoreGridness16th: ScoringsFunction = ({
 	let bestMode: GridId = "16";
 
 	const enabledMods = enabledGrids.map((g) => GRID_MOD[g]);
-// 		//DEBUG JORN
-// 	if (scoreMultiple && Math.random() < 0.01) {
-// 	const counts: Record<string, number> = {};
 
-// 	for (const note of melody) {
-// 		let bestGrid = "";
-// 		let bestDist = Infinity;
-
-// 		for (const grid of enabledGrids) {
-// 			const mod = GRID_MOD[grid];
-// 			const d = distToGrid(note.position, mod);
-// 			if (d < bestDist) {
-// 				bestDist = d;
-// 				bestGrid = grid;
-// 			}
-// 		}
-
-// 		counts[bestGrid] = (counts[bestGrid] || 0) + 1;
-// 	}
-
-// 	console.log("MULTIGRID DISTRIBUTION:", counts);
-// }
 
 	for (const grid of enabledGrids) {
 	const mod = GRID_MOD[grid];

@@ -16,6 +16,7 @@ export { scoreTonality } from "./tonality.ts";
 // export { scoreNormalizeMelodic } from "./normalize.ts";
 export { scoreNoteLengthDiversity } from "./enthropy.ts";
 export { scoreVelocityDiversity } from "./velocity.ts"; 
+export { scorePitchClassDiversity } from "./pitchclassdiversity.ts";
 import { Note } from "../notes/index.ts";
 
 export type ParamType = "note" | "float" | "int" | "bool";

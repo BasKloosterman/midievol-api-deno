@@ -154,11 +154,11 @@ export const scoreMeasureForChord: ScoringsFunction = (
 		const pitch = Math.round(note.pitch / 10);
   
 		const root = pitch % 12;
-		const normalized = measure
-		  .map((n) => (((Math.round(n.pitch / 10) % 12) - root + 12) % 12))
-		  .sort();
-  
-		const total = normalized.length;
+		const normalized = Array.from(new Set(
+  		measure.map((n) => (((Math.round(n.pitch / 10) % 12) - root + 12) % 12)),
+		)).sort((a, b) => a - b);
+
+const total = normalized.length;
   
 		const bestChordScore = Math.max(
 		  ...Object.values(allowedChords).map((chordSet) => {
