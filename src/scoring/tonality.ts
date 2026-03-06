@@ -153,11 +153,15 @@ function calculateTonalityScore(pitches: number[], scales: scales[]) {
 	const scaleNotes = scale.map((interval) => (root + interval) % 12);
 
 	const inScaleCount = scaleNotes.reduce(
-		(sum, pitch) => sum + noteCounts[pitch],
-		0,
-	);
-	const outOfScaleCount = totalNotes - inScaleCount;
-	const tonalScore = (inScaleCount - outOfScaleCount) / totalNotes;
+	(sum, pitch) => sum + noteCounts[pitch],
+	0,
+);
+
+	const inRatio = inScaleCount / totalNotes
+	const scaleSize = scale.length
+	const chance = scaleSize / 12
+
+	const finalScore = (inRatio - chance) / (1 - chance)	
 
 	const pitchNames = [
 		"C",
@@ -176,9 +180,9 @@ function calculateTonalityScore(pitches: number[], scales: scales[]) {
 	const bestKeyName = `${pitchNames[root]} ${mode}`;
 
 	return {
-		bestKey: bestKeyName,
-		tonalityScore: tonalScore,
-	};
+	bestKey: bestKeyName,
+	tonalityScore: finalScore,
+};;
 }
 
 function getEnabledScales(param: Param | undefined): scales[] {
