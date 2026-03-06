@@ -24,6 +24,7 @@ export interface ScoringDefinition {
     voices: [boolean, boolean, boolean]
     splitVoices: boolean
     scoreRange: [score, score]
+    
 }
 
 export function clamp(n: number, minVal: number, maxVal: number): number {
@@ -73,6 +74,7 @@ export function normalizeChildren(
 const probSmallMutation = 0.8
 const probMediumMutation = 0.15
 const probLargeMutation = 0.05
+const skipParentChance = 0.03
 
 const maxReach = 840
 const framesPerQNote = 600
@@ -436,31 +438,38 @@ export function evo(
     let nBpm: number = bpm
 
     for (let gen = 0; gen < nGens; gen++) {
-        const children: {
-            melody: Note[]
-            scores: (FuncScore | null)[]
-            bpm: number
-        }[] = []
-        // First add self to compare to original later
-        // First add current parent ("self") so normalization compares against current organism
-        const scores = scoreDefs.map((def) =>
-            def.weight !== 0
-                ? applySplitVoices(def.fn, {
-                      melody: nMelody,
-                      params: def.params,
-                      voiceSplits,
-                      voices: def.voices,
-                      splitVoices: def.splitVoices,
-                      bpm: nBpm,
-                  })
-                : null
-        )
+    const includeParentInScoring = Math.random() >= skipParentChance
 
-        children.push({ melody: nMelody.slice(), scores, bpm: nBpm })
+    const children: {
+        melody: Note[]
+        scores: (FuncScore | null)[]
+        bpm: number
+    }[] = []
+        // Usually include current parent in scoring, but sometimes skip it
+// to help break out of local attractors.
+if (includeParentInScoring) {
+    const scores = scoreDefs.map((def) =>
+        def.weight !== 0
+            ? applySplitVoices(def.fn, {
+                  melody: nMelody,
+                  params: def.params,
+                  voiceSplits,
+                  voices: def.voices,
+                  splitVoices: def.splitVoices,
+                  bpm: nBpm,
+              })
+            : null
+    )
+
+    children.push({ melody: nMelody.slice(), scores, bpm: nBpm })
+}
+               
+
+
 
         for (let i = 0; i < nChildren; i++) {
             const mutSize = getMutSize()
-            const singleMutation = Math.random() < 0.5 // ← nieuw probeersel! de helft van de kids mag maar 1 mutatie
+            const singleMutation = Math.random() < 0.3 // ← nieuw probeersel! 30 procent van de kids mag maar 1 mutatie
             const macroMut = pickMacroMut(mutSize)
             let evolved: Note[] = []
             let childBpm = nBpm
@@ -536,7 +545,7 @@ export function evo(
                 bpm: childBpm,
             })
         }
-
+        
         const normalizedChildren = normalizeChildren(children, scoreDefs)
 
         const scoredChildren = normalizedChildren.map(
@@ -548,6 +557,7 @@ export function evo(
                 bpm,
             })
         )
+
 
         const maxScore = Math.max(
             ...scoredChildren
