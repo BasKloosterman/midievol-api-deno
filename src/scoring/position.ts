@@ -459,9 +459,18 @@ export const _scoreAbsoluteDensity = ({
   const error = actualNotes - expectedNotes;
 
   // Gaussian falloff (range ~0..1)
-  const score = Math.exp(-(error * error) / (2 * tolerance * tolerance));
+  const densityScore = Math.exp(
+    -(error * error) / (2 * tolerance * tolerance)
+  );
 
-  return score;
+  // Small bonus for maintaining density with more notes
+  // Only kicks in when density is already reasonably good
+  let bonus = 0;
+  if (densityScore > 0.75) {
+    bonus = Math.min(0.15, Math.sqrt(actualNotes) * 0.03);
+  }
+
+  return densityScore + bonus;
 };
 
 const aggregatePowerMean = (scores: number[], p = -0.5) => {
