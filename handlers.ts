@@ -80,18 +80,41 @@ function maxScore(scores: (FuncScore | null)[]) : FuncScore | null {
 	}, null)
 }
 
-export function normalizeMinOneToOne(scores: (FuncScore | null)[], debug = false): (FuncScore | null)[] {
-	const min = minScore(scores);
-	const max = maxScore(scores);
+export function normalizeMinOneToOne(
+  scores: (FuncScore | null)[],
+  debug = false
+): (FuncScore | null)[] {
+  const valid = scores.filter((s): s is FuncScore => s !== null && s.score !== null);
 
-	if (min === null && max === null) {
-		return scores
-	}
+  if (valid.length === 0) {
+    return scores;
+  }
 
+  const min = valid.reduce((a, b) => (a.score! <= b.score! ? a : b));
+  const max = valid.reduce((a, b) => (a.score! >= b.score! ? a : b));
 
-	const diff = max!.score! - min!.score!;
-	const m = diff === 0 ? 1 : 2 / diff;
-	return scores.map((score) => ({score: score == null ? null : -1 + m * (score!.score! - min!.score!), info: score!.info}));
+  const diff = max.score! - min.score!;
+
+  if (diff === 0) {
+    return scores.map((score) =>
+      score == null || score.score == null
+        ? null
+        : { score: 0, info: score.info }
+    );
+  }
+
+  const m = 2 / diff;
+
+  return scores.map((score) => {
+    if (score == null || score.score == null) {
+      return null;
+    }
+
+    return {
+      score: -1 + m * (score.score - min.score!),
+      info: score.info,
+    };
+  });
 }
 
 export const scoringFunctions: ScoringDefinition[] = [
@@ -284,31 +307,31 @@ export const scoringFunctions: ScoringDefinition[] = [
 		params: [
 			{
 				name: "VarLow",
-				range: [0,10],
+				range: [0, 10],
 				value: 0.8,
 				type: 'float'
 			},
 			{
 				name: "VarHigh",
-				range: [0,10],
+				range: [0, 10],
 				value: 1.25,
 				type: 'float'
 			},
 			{
 				name: "beatsPerMeasure",
-				range: [2,8],
+				range: [2, 8],
 				value: 4,
 				type: 'int'
 			},
 			{
 				name: "stepBeats",
-				range: [0.25,2],
+				range: [0.25, 2],
 				value: 1,
 				type: 'int'
 			},
 			{
 				name: "onsetMergeSubdivision",
-				range: [8,128],
+				range: [8, 128],
 				value: 64,
 				type: 'int'
 			},
