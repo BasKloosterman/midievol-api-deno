@@ -166,31 +166,33 @@ function scoreRatiosWithBoundaries(
     const MaxVar = (Math.max(0, Math.min(10, varMaxUser)) / 10) * DmaxPossible
 
     for (let i = 0; i < ratios.length; i++) {
-        const eA = energy[i]
-        const eB = energy[i + 1]
-        const r = ratios[i]
+    const eA = energy[i]
+    const eB = energy[i + 1]
 
-        // Phrase boundary (stilte/inzet) overslaan
-        if (eA === 0 || eB === 0) {
-            boundariesSkipped++
-            continue
-        }
+    if (eA === 0 && eB === 0) {
+        boundariesSkipped++
+        continue
+    }
 
-        transitionsUsed++
+    const safeA = Math.max(eA, 1)
+    const safeB = Math.max(eB, 1)
 
-        const D = Math.abs(Math.log(r))
-        if (!Number.isFinite(D)) continue
+    transitionsUsed++
 
-        // te vlak (alleen als MinVar > 0)
-        if (MinVar > 0 && D < MinVar) {
-            penalty += (MinVar - D) / (MinVar + tiny)
-            outside++
-        }
-        // te spikey (als MaxVar==0 -> alles behalve D==0 wordt zwaar afgestraft maar niet crashen)
-        else if (D > MaxVar) {
-            penalty += (D - MaxVar) / (MaxVar + tiny)
-            outside++
-        }
+    const D = Math.abs(Math.log(safeB / safeA))
+    if (!Number.isFinite(D)) continue
+
+    // te vlak (alleen als MinVar > 0)
+    if (MinVar > 0 && D < MinVar) {
+        penalty += (MinVar - D) / (MinVar + tiny)
+        outside++
+    }
+    // te spikey
+    else if (D > MaxVar) {
+        penalty += (D - MaxVar) / (MaxVar + tiny)
+        outside++
+    }
+
     }
 
     const rawScore = -penalty
@@ -211,7 +213,7 @@ function scoreRatiosWithBoundaries(
     ]
 
     return { score: rawScore, info }
-}
+};
 
 // ---------------------------------------------------------
 // De ScoringsFunction wrapper (zoals jullie andere scorers)
@@ -306,7 +308,7 @@ for (let v = 0; v < voices.length; v++) {
 }
 
 if (used === 0) {
-  return { score: -999, info: [{ name: 'reason', value: 'no_valid_voices' }] };
+  return null;
 }
 
 return { score: total / used, info: [] };
