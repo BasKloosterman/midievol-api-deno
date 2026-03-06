@@ -17,24 +17,33 @@ const normLengthMax = framesPerQNote;
 // 	const penalty = Math.exp(-deviation / 5);
 // 	return maxScore * penalty;
 // }
+
 export const scoreGrowth: ScoringsFunction = (
   { melody, voiceSplits, voices },
 ) => {
   melody = limitMelody(melody, voiceSplits, voices);
 
-  const n = melody.length;
+  if (melody.length === 0) return null;
 
-	let score;
+  // Zorg dat dit quarter notes zijn
+  const len = calcTotalLen(melody) / framesPerQNote;
 
-	if (n <= 12) {
-  	score = n;
-	} else {
-  	score = 12 + Math.sqrt(n - 12);
-	}
+  // Zachte groeidruk die langzaam afvlakt
+  let score = Math.min(len, 12) * 0.15;
 
-  if (n === 0) return null;
+  // Lokale attractors in quarter notes
+  const centers = [12, 16, 20, 24, 28];
+  const sigma = 2.0;
 
-  return { score, info: [] };
+  for (const c of centers) {
+    const d = len - c;
+    score += Math.exp(-(d * d) / (2 * sigma * sigma));
+  }
+  // jitter om kleine plateaus te breken
+	score += (Math.random() * 2 - 1) * 0.02 * Math.min(1, len / 16);
+
+	return { score, info: [] };
+
 };
 
 export const scoreMusicLength: ScoringsFunction = (
