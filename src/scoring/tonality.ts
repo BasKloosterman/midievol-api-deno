@@ -1,62 +1,341 @@
 import { Param, ScoringsFunction } from "./index.ts";
-import { ScaleCategory, SCALE_CATEGORIES, ScaleName } from "./scales.ts";
+import { ScaleFamily, SCALES, ScaleName } from "./scales.ts";
 import { limitMelody, pearsonCorr, rotate } from "./util.ts";
-
 
 /* =========================
    Param helpers
 ========================= */
 
-/**
- * Param 0: category selector (not a bitmask)
- * 0 -> tonal_core
- * 1 -> open_modal
- * 2 -> exotic
- */
-export const mapParamToScaleCategory = (
-    param: Param | undefined,
-): ScaleCategory => {
-    const value = Math.floor(param?.value ?? 0);
-
-    switch (value) {
-        case 1:
-            return "open_modal";
-        case 2:
-            return "exotic";
-        case 0:
-        default:
-            return "tonal_core";
-    }
+type EnabledScale = {
+    name: ScaleName;
+    notes: number[];
+    profile: number[];
 };
 
 /**
- * Param 1: scale selector within the chosen category (bitmask)
+ * Fixed order for param 0 -> ScaleFamily
  *
- * Bit positions are interpreted by the order of scales inside the chosen category.
- * Invalid bits are ignored.
- * If no valid scales are selected, all scales from the category are returned.
+ * 0  -> major_family
+ * 1  -> minor_family
+ * 2  -> modal
+ * 3  -> pentatonic
+ * 4  -> symmetric
+ * 5  -> world_color
+ * 6  -> bright
+ * 7  -> dark
+ * 8  -> dreamy
+ * 9  -> earthy
+ * 10 -> mystical
+ * 11 -> tense
+ * 12 -> bluesy
+ * 13 -> cinematic
+ * 14 -> floating
+ * 15 -> ritual
+ * 16 -> pentatonic_structure
+ * 17 -> hexatonic
+ * 18 -> heptatonic
+ * 19 -> octatonic
+ * 20 -> open
+ * 21 -> stable
+ * 22 -> unstable
+ * 23 -> africa_influenced
+ * 24 -> asia_influenced
+ * 25 -> middle_east_influenced
+ * 26 -> european_folk
+ * 27 -> blues_american
+ * 28 -> global_folk
  */
-function getEnabledScalesForCategory(
-    category: ScaleCategory,
+export const SCALE_FAMILY_ORDER: ScaleFamily[] = [
+    "major_family",
+    "minor_family",
+    "modal",
+    "pentatonic",
+    "symmetric",
+    "world_color",
+
+    "bright",
+    "dark",
+    "dreamy",
+    "earthy",
+    "mystical",
+    "tense",
+    "bluesy",
+    "cinematic",
+    "floating",
+    "ritual",
+
+    "pentatonic_structure",
+    "hexatonic",
+    "heptatonic",
+    "octatonic",
+    "open",
+    "stable",
+    "unstable",
+
+    "africa_influenced",
+    "asia_influenced",
+    "middle_east_influenced",
+    "european_folk",
+    "blues_american",
+    "global_folk",
+];
+
+/**
+ * Param 0: scale family selector (not a bitmask)
+ *
+ * Uses SCALE_FAMILY_ORDER for stable index mapping.
+ * Out-of-range values are clamped.
+ */
+export const mapParamToScaleFamily = (
     param: Param | undefined,
-): { name: ScaleName; notes: number[]; profile: number[] }[] {
-    const categoryScales = SCALE_CATEGORIES[category].scales;
+): ScaleFamily => {
+    const maxIndex = SCALE_FAMILY_ORDER.length - 1;
+    const value = Math.max(0, Math.min(maxIndex, Math.floor(param?.value ?? 0)));
+    return SCALE_FAMILY_ORDER[value];
+};
 
-    const availableScales = Object.entries(categoryScales)
-        .filter((entry): entry is [ScaleName, { notes: number[]; profile: number[] }] => {
-            return !!entry[1];
-        })
-        .map(([name, value]) => ({
-            name,
-            notes: value.notes,
-            profile: value.profile,
-        }));
+/**
+ * Fixed order for bit positions inside each family.
+ * Bit 0 selects first item, bit 1 second item, etc.
+ */
+export const FAMILY_SCALE_ORDER: Record<ScaleFamily, ScaleName[]> = {
+    major_family: [
+        "major",
+        "mixolydian",
+    ],
 
-    if (availableScales.length === 0) {
-        throw new Error(`Category "${category}" contains no scales.`);
+    minor_family: [
+        "natural_minor",
+        "harmonic_minor",
+        "melodic_minor",
+        "dorian",
+    ],
+
+    modal: [
+        "dorian",
+        "phrygian",
+        "lydian",
+        "mixolydian",
+        "locrian",
+    ],
+
+    pentatonic: [
+        "major_pentatonic",
+        "minor_pentatonic",
+        "blues",
+        "egyptian_pentatonic",
+        "hirajoshi",
+        "insen",
+    ],
+
+    symmetric: [
+        "whole_tone",
+        "diminished",
+    ],
+
+    world_color: [
+        "phrygian_dominant",
+        "double_harmonic",
+        "hungarian_minor",
+    ],
+
+    bright: [
+        "major",
+        "lydian",
+        "major_pentatonic",
+    ],
+
+    dark: [
+        "natural_minor",
+        "phrygian",
+        "locrian",
+        "hungarian_minor",
+        "hirajoshi",
+    ],
+
+    dreamy: [
+        "melodic_minor",
+        "lydian",
+        "whole_tone",
+    ],
+
+    earthy: [
+        "dorian",
+        "mixolydian",
+        "minor_pentatonic",
+        "blues",
+    ],
+
+    mystical: [
+        "harmonic_minor",
+        "phrygian",
+        "diminished",
+        "phrygian_dominant",
+        "double_harmonic",
+        "hirajoshi",
+    ],
+
+    tense: [
+        "harmonic_minor",
+        "phrygian",
+        "locrian",
+        "diminished",
+        "phrygian_dominant",
+        "hungarian_minor",
+    ],
+
+    bluesy: [
+        "minor_pentatonic",
+        "blues",
+    ],
+
+    cinematic: [
+        "major",
+        "melodic_minor",
+        "lydian",
+        "whole_tone",
+        "diminished",
+    ],
+
+    floating: [
+        "lydian",
+        "whole_tone",
+        "insen",
+    ],
+
+    ritual: [
+        "phrygian_dominant",
+        "double_harmonic",
+        "insen",
+    ],
+
+    pentatonic_structure: [
+        "major_pentatonic",
+        "minor_pentatonic",
+        "egyptian_pentatonic",
+        "hirajoshi",
+        "insen",
+    ],
+
+    hexatonic: [
+        "blues",
+        "whole_tone",
+    ],
+
+    heptatonic: [
+        "major",
+        "natural_minor",
+        "harmonic_minor",
+        "melodic_minor",
+        "dorian",
+        "phrygian",
+        "lydian",
+        "mixolydian",
+        "locrian",
+        "phrygian_dominant",
+        "double_harmonic",
+        "hungarian_minor",
+    ],
+
+    octatonic: [
+        "diminished",
+    ],
+
+    open: [
+        "major_pentatonic",
+        "egyptian_pentatonic",
+    ],
+
+    stable: [
+        "major",
+        "natural_minor",
+    ],
+
+    unstable: [
+        "locrian",
+        "whole_tone",
+        "diminished",
+    ],
+
+    africa_influenced: [
+        "major_pentatonic",
+        "minor_pentatonic",
+        "egyptian_pentatonic",
+    ],
+
+    asia_influenced: [
+        "major_pentatonic",
+        "hirajoshi",
+        "insen",
+    ],
+
+    middle_east_influenced: [
+        "harmonic_minor",
+        "phrygian",
+        "phrygian_dominant",
+        "double_harmonic",
+    ],
+
+    european_folk: [
+        "major",
+        "natural_minor",
+        "hungarian_minor",
+    ],
+
+    blues_american: [
+        "mixolydian",
+        "minor_pentatonic",
+        "blues",
+    ],
+
+    global_folk: [
+        "dorian",
+        "major_pentatonic",
+        "egyptian_pentatonic",
+    ],
+};
+
+/**
+ * Param 1: scale selector within the chosen family (bitmask)
+ *
+ * Bit positions are interpreted by FAMILY_SCALE_ORDER[family].
+ * Invalid bits are ignored.
+ * If no valid scales are selected, all scales from the family are returned.
+ */
+export function getEnabledScalesForFamily(
+    family: ScaleFamily,
+    param: Param | undefined,
+): EnabledScale[] {
+    const familyDefinition = SCALES[family];
+
+    if (!familyDefinition) {
+        throw new Error(`Unknown scale family "${family}".`);
     }
 
-    // No param -> all scales in chosen category
+    const orderedNames = FAMILY_SCALE_ORDER[family];
+
+    if (!orderedNames || orderedNames.length === 0) {
+        throw new Error(`Family "${family}" has no configured scale order.`);
+    }
+
+    const availableScales: EnabledScale[] = orderedNames
+        .map((name) => {
+            const scale = familyDefinition.scales[name];
+            if (!scale) return null;
+
+            return {
+                name,
+                notes: scale.notes,
+                profile: scale.profile,
+            };
+        })
+        .filter((scale): scale is EnabledScale => scale !== null);
+
+    if (availableScales.length === 0) {
+        throw new Error(`Family "${family}" contains no scales.`);
+    }
+
+    // No param -> all scales in chosen family
     if (!param) return availableScales;
 
     const mask = Math.floor(param.value);
@@ -66,9 +345,6 @@ function getEnabledScalesForCategory(
         return (mask & bit) !== 0;
     });
 
-    // Invalid bits are automatically ignored because we only test against
-    // indices that actually exist in this category.
-    // If no valid bits matched, fall back to all scales.
     return selected.length > 0 ? selected : availableScales;
 }
 
@@ -76,11 +352,9 @@ function getEnabledScalesForCategory(
    Tonality scoring
 ========================= */
 
-
-
 function calculateTonalityScore(
     pitches: number[],
-    enabledScales: { name: ScaleName; notes: number[]; profile: number[] }[],
+    enabledScales: EnabledScale[],
 ) {
     if (pitches.length === 0) {
         throw new Error("Note list must not be empty.");
@@ -144,7 +418,6 @@ function calculateTonalityScore(
     };
 }
 
-
 export const scoreTonality: ScoringsFunction = (
     { melody, voiceSplits, voices, params },
 ) => {
@@ -155,18 +428,18 @@ export const scoreTonality: ScoringsFunction = (
 
     const roundedPitches = melody.map((n) => Math.round(n.pitch / 10));
 
-    // params[0] = category index (single choice)
-    // params[1] = scale bitmask inside that category
-    const category = mapParamToScaleCategory(params[0]);
-    const enabledScales = getEnabledScalesForCategory(category, params[1]);
+    // params[0] = family index (single choice)
+    // params[1] = scale bitmask inside that family
+    const family = mapParamToScaleFamily(params[0]);
+    const enabledScales = getEnabledScalesForFamily(family, params[1]);
 
     const result = calculateTonalityScore(roundedPitches, enabledScales);
 
     return {
         score: result.tonalityScore,
         info: [
-            { name: "category", value: category },
             { name: "key", value: result.bestKey },
+            { name: "fam", value: family },
         ],
     };
 };
