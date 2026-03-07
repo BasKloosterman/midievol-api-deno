@@ -81,7 +81,7 @@ const score = Math.max(0, Math.min(rawScore, 1));
 	
 
 
-	return combined * 2 - 1;
+	return combined; 
 }
 
 export const scoreNoteLengthDiversity: ScoringsFunction = (
