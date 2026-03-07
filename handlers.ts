@@ -165,7 +165,17 @@ export const scoringFunctions: ScoringDefinition[] = [
 		weight: 0,
 		normalizationFn: normalizeMinOneToOne,
 		hasNormalizedScore: true,
-		params: [],
+		params: [{
+			name: "Chord categories",
+			range: [0, 64],
+			value: 0,
+			type: "int",
+		}, {
+			name: "ScalesBitMask",
+			range: [0, 4294967296], // max 32 bits for now
+			value: 4294967296,
+			type: "int",
+		}],
 		voices: [true, true, true],
 		splitVoices: false,
 		scoreRange: [-1, 1],
