@@ -581,5 +581,5 @@ if (includeParentInScoring) {
         }
     }
 
-    return { melody: nMelody, scores: nScoreList, score: nScore, bpm: nBpm }
+    return { melody: nMelody, scores: nScoreList.map(s => (!s ? s : {...s, score: s?.score || 0})), score: nScore, bpm: nBpm }
 }
